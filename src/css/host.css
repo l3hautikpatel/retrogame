@@ -1,0 +1,354 @@
+/**
+ * Host Interface Styles
+ * Styles for the Desktop/TV screen (game host)
+ */
+
+#app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Landing Screen */
+#landing-screen {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-xl);
+  background: radial-gradient(circle at center, var(--color-bg-secondary), var(--color-bg-primary));
+}
+
+.logo {
+  font-size: 4rem;
+  font-weight: bold;
+  color: var(--color-accent-primary);
+  text-shadow: 
+    0 0 20px var(--color-accent-primary),
+    0 0 40px var(--color-accent-primary),
+    0 0 60px var(--color-accent-primary);
+  margin-bottom: var(--spacing-xxl);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.room-code-container {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.room-code {
+  font-size: 5rem;
+  font-weight: bold;
+  color: var(--color-accent-secondary);
+  letter-spacing: 1rem;
+  text-shadow: 0 0 30px var(--color-accent-secondary);
+  padding: var(--spacing-lg);
+  background: var(--color-bg-tertiary);
+  border: 3px solid var(--color-accent-secondary);
+  border-radius: var(--radius-xl);
+  margin: var(--spacing-md) 0;
+  display: inline-block;
+}
+
+.qr-code-container {
+  background: white;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-glow);
+  margin: var(--spacing-xl) 0;
+}
+
+#qrcode {
+  display: inline-block;
+}
+
+.instructions {
+  font-size: 1.2rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin-top: var(--spacing-lg);
+  max-width: 600px;
+}
+
+/* Game Selection Screen */
+#game-selection {
+  width: 100%;
+  height: 100%;
+  padding: var(--spacing-xl);
+  overflow-y: auto;
+}
+
+.game-selection-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.connected-controllers {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.controller-indicator {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-tertiary);
+  border: 2px solid var(--color-accent-primary);
+  border-radius: var(--radius-md);
+  color: var(--color-accent-primary);
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.controller-indicator.active {
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+/* Game Library */
+.game-section {
+  margin-bottom: var(--spacing-xxl);
+}
+
+.section-title {
+  font-size: 1.5rem;
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-accent-secondary);
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--color-accent-secondary);
+  padding-bottom: var(--spacing-sm);
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+}
+
+.game-card {
+  background: var(--color-bg-secondary);
+  border: 2px solid var(--color-accent-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.game-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-glow);
+  border-color: var(--color-accent-secondary);
+}
+
+.game-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.game-card:hover::before {
+  left: 100%;
+}
+
+.game-cover {
+  width: 100%;
+  height: 150px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: var(--color-accent-primary);
+  overflow: hidden;
+}
+
+.game-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.game-title {
+  font-weight: bold;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xs);
+  font-size: 1rem;
+}
+
+.game-system {
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+}
+
+/* Upload Section */
+.upload-section {
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-xl);
+  background: var(--color-bg-tertiary);
+  border: 2px dashed var(--color-accent-primary);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.upload-area {
+  padding: var(--spacing-xxl);
+  border: 3px dashed var(--color-accent-secondary);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.upload-area:hover {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-accent-primary);
+}
+
+.upload-icon {
+  font-size: 4rem;
+  color: var(--color-accent-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+#rom-file {
+  display: none;
+}
+
+/* Emulator Container */
+#emulator-container {
+  width: 100%;
+  height: 100%;
+  display: none;
+  position: relative;
+  background: black;
+}
+
+#emulator-container.active {
+  display: flex;
+  flex-direction: column;
+}
+
+#game {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+}
+
+#game canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.emulator-controls {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  z-index: 100;
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.control-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(15, 15, 35, 0.8);
+  border: 2px solid var(--color-accent-primary);
+  border-radius: var(--radius-md);
+  color: var(--color-accent-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all var(--transition-fast);
+}
+
+.control-btn:hover {
+  background: var(--color-accent-primary);
+  color: var(--color-bg-primary);
+}
+
+/* Game Info Overlay */
+.game-info-overlay {
+  position: absolute;
+  bottom: var(--spacing-xl);
+  left: var(--spacing-xl);
+  background: rgba(15, 15, 35, 0.9);
+  border: 2px solid var(--color-accent-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  backdrop-filter: blur(10px);
+  max-width: 400px;
+  animation: slideIn 0.5s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.game-info-title {
+  font-size: 1.5rem;
+  color: var(--color-accent-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.game-info-meta {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .logo {
+    font-size: 2.5rem;
+  }
+  
+  .room-code {
+    font-size: 3rem;
+    letter-spacing: 0.5rem;
+  }
+  
+  .games-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+  }
+  
+  .game-cover {
+    height: 120px;
+  }
+}

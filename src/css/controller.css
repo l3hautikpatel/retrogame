@@ -1,0 +1,431 @@
+/**
+ * Controller Interface Styles
+ * Styles for the Mobile controller screen
+ */
+
+#controller-app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  position: fixed;
+  overflow: hidden;
+}
+
+/* Connection Screen */
+#connection-screen {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-xl);
+  background: radial-gradient(circle at center, var(--color-bg-secondary), var(--color-bg-primary));
+}
+
+.connection-logo {
+  font-size: 3rem;
+  font-weight: bold;
+  color: var(--color-accent-primary);
+  text-shadow: 0 0 20px var(--color-accent-primary);
+  margin-bottom: var(--spacing-xxl);
+}
+
+.connection-form {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.input-group label {
+  font-size: 1.1rem;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#room-code-input {
+  width: 100%;
+  text-align: center;
+  font-size: 2rem;
+  letter-spacing: 0.5rem;
+  padding: var(--spacing-lg);
+}
+
+/* Controller Screen */
+#controller-screen {
+  width: 100%;
+  height: 100%;
+  display: none;
+  flex-direction: column;
+  background: var(--color-bg-primary);
+}
+
+#controller-screen.active {
+  display: flex;
+}
+
+/* Status Bar */
+.status-bar {
+  padding: var(--spacing-md);
+  background: var(--color-bg-tertiary);
+  border-bottom: 2px solid var(--color-accent-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#connection-status {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.status-connected {
+  color: var(--color-success);
+}
+
+.status-waiting {
+  color: var(--color-warning);
+  animation: pulse-waiting 2s ease-in-out infinite;
+}
+
+@keyframes pulse-waiting {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-disconnected {
+  color: var(--color-error);
+}
+
+/* Shoulder Buttons */
+.shoulder-buttons {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  gap: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  min-height: 80px;
+}
+
+.shoulder-left,
+.shoulder-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex: 1;
+  max-width: 45%;
+}
+
+.shoulder-btn {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-tertiary);
+  border: 3px solid var(--color-accent-primary);
+  border-radius: var(--radius-lg);
+  color: var(--color-accent-primary);
+  font-weight: bold;
+  font-size: 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  min-height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shoulder-btn:active,
+.shoulder-btn.active {
+  background: var(--color-accent-primary);
+  color: var(--color-bg-primary);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+  transform: scale(0.95);
+}
+
+/* Main Controller Area */
+.controller-layout {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-xl) var(--spacing-md);
+  gap: var(--spacing-md);
+  position: relative;
+  min-height: 0;
+}
+
+/* D-Pad */
+.dpad-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 50%;
+}
+
+.dpad {
+  width: 200px;
+  height: 200px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 3px;
+}
+
+.dpad-btn {
+  background: var(--color-bg-tertiary);
+  border: 3px solid var(--color-accent-primary);
+  color: var(--color-accent-primary);
+  font-size: 1.5rem;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+#dpad-up {
+  grid-column: 2;
+  grid-row: 1;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+#dpad-left {
+  grid-column: 1;
+  grid-row: 2;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+
+#dpad-center {
+  grid-column: 2;
+  grid-row: 2;
+  background: var(--color-bg-secondary);
+  border: 2px solid var(--color-accent-tertiary);
+  pointer-events: none;
+}
+
+#dpad-right {
+  grid-column: 3;
+  grid-row: 2;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+}
+
+#dpad-down {
+  grid-column: 2;
+  grid-row: 3;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.dpad-btn:active,
+.dpad-btn.active {
+  background: var(--color-accent-primary);
+  color: var(--color-bg-primary);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+  transform: scale(0.9);
+}
+
+/* Face Buttons */
+.face-buttons-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 50%;
+}
+
+.face-buttons {
+  width: 200px;
+  height: 200px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+.face-btn {
+  width: 60px;
+  height: 60px;
+  background: var(--color-bg-tertiary);
+  border: 3px solid var(--color-accent-primary);
+  border-radius: 50%;
+  color: var(--color-accent-primary);
+  font-size: 1.5rem;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+#btn-y {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+#btn-x {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: center;
+  border-color: var(--color-info);
+  color: var(--color-info);
+}
+
+#btn-b {
+  grid-column: 3;
+  grid-row: 2;
+  align-self: center;
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+#btn-a {
+  grid-column: 2;
+  grid-row: 3;
+  justify-self: center;
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.face-btn:active,
+.face-btn.active {
+  background: currentColor;
+  color: var(--color-bg-primary);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+  transform: scale(0.85);
+}
+
+/* System Buttons */
+.system-buttons {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: var(--spacing-lg);
+  z-index: 10;
+}
+
+.system-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-bg-tertiary);
+  border: 2px solid var(--color-accent-tertiary);
+  border-radius: var(--radius-xl);
+  color: var(--color-accent-tertiary);
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.system-btn:active,
+.system-btn.active {
+  background: var(--color-accent-tertiary);
+  color: var(--color-bg-primary);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+  transform: scale(0.9);
+}
+
+/* Controller Info */
+#controller-info {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 15, 35, 0.95);
+  border: 3px solid var(--color-accent-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xxl);
+  font-size: 1.5rem;
+  color: var(--color-accent-primary);
+  text-align: center;
+  z-index: 1000;
+  box-shadow: 0 0 50px var(--color-accent-primary);
+  display: none;
+  backdrop-filter: blur(10px);
+}
+
+/* Landscape Mode Optimization */
+@media (orientation: landscape) {
+  .shoulder-buttons {
+    padding: var(--spacing-xs) var(--spacing-md);
+    min-height: 60px;
+  }
+  
+  .shoulder-btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.9rem;
+    min-height: 28px;
+  }
+  
+  .controller-layout {
+    padding: var(--spacing-md);
+  }
+  
+  .dpad,
+  .face-buttons {
+    width: 170px;
+    height: 170px;
+  }
+  
+  .face-btn {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+/* Small Screens */
+@media (max-width: 375px) {
+  .shoulder-buttons {
+    min-height: 70px;
+  }
+
+  .shoulder-btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.9rem;
+    min-height: 32px;
+  }
+
+  .dpad,
+  .face-buttons {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .face-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+}

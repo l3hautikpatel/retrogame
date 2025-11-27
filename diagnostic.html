@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connection Diagnostic Tool</title>
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0f0f23;
+      color: #00ff00;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 { color: #00ff00; text-shadow: 0 0 10px #00ff00; }
+    .test-section {
+      background: #1a1a2e;
+      border: 2px solid #00ff00;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      font-family: monospace;
+    }
+    .success { background: #004400; color: #00ff00; }
+    .error { background: #440000; color: #ff0000; }
+    .info { background: #003344; color: #00d9ff; }
+    button {
+      background: #1a1a2e;
+      border: 2px solid #00ff00;
+      color: #00ff00;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: inherit;
+      margin: 5px;
+    }
+    button:hover { background: #00ff00; color: #0f0f23; }
+    input {
+      background: #1a1a2e;
+      border: 2px solid #00ff00;
+      color: #00ff00;
+      padding: 10px;
+      border-radius: 5px;
+      font-family: inherit;
+      width: 200px;
+    }
+    #log {
+      background: #000;
+      color: #00ff00;
+      padding: 15px;
+      border-radius: 5px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 PeerJS Connection Diagnostic Tool</h1>
+  
+  <div class="test-section">
+    <h2>Step 1: Test PeerJS Initialization</h2>
+    <button onclick="testPeerInit()">Test Peer Initialization</button>
+    <div id="peer-init-result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Step 2: Create Host</h2>
+    <button onclick="createHost()">Create Test Host</button>
+    <div id="host-result"></div>
+    <div id="host-code" style="font-size: 24px; font-weight: bold; margin: 10px 0;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Step 3: Connect Controller</h2>
+    <input type="text" id="connect-code" placeholder="Enter 4-digit code" maxlength="4">
+    <button onclick="connectController()">Connect to Host</button>
+    <div id="controller-result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Connection Log</h2>
+    <button onclick="clearLog()">Clear Log</button>
+    <div id="log"></div>
+  </div>
+
+  <script>
+    let hostPeer = null;
+    let controllerPeer = null;
+    let hostConnection = null;
+    let roomCode = null;
+
+    function log(message, type = 'info') {
+      const logDiv = document.getElementById('log');
+      const timestamp = new Date().toLocaleTimeString();
+      logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log(message);
+    }
+
+    function clearLog() {
+      document.getElementById('log').innerHTML = '';
+    }
+
+    function showResult(elementId, message, success) {
+      const div = document.getElementById(elementId);
+      div.innerHTML = `<div class="result ${success ? 'success' : 'error'}">${message}</div>`;
+    }
+
+    async function testPeerInit() {
+      log('Testing PeerJS initialization...');
+      
+      try {
+        const testPeer = new Peer({
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' }
+            ]
+          }
+        });
+
+        testPeer.on('open', (id) => {
+          log(`✅ Peer created successfully with ID: ${id}`, 'success');
+          showResult('peer-init-result', `✅ SUCCESS: Peer ID = ${id}`, true);
+          testPeer.destroy();
+        });
+
+        testPeer.on('error', (error) => {
+          log(`❌ Peer error: ${error.message}`, 'error');
+          showResult('peer-init-result', `❌ ERROR: ${error.message}`, false);
+        });
+
+      } catch (error) {
+        log(`❌ Exception: ${error.message}`, 'error');
+        showResult('peer-init-result', `❌ EXCEPTION: ${error.message}`, false);
+      }
+    }
+
+    function createHost() {
+      log('Creating host...');
+      
+      // Generate room code
+      roomCode = Math.floor(1000 + Math.random() * 9000).toString();
+      const hostId = `host-${roomCode}`;
+      
+      log(`Host ID: ${hostId}`);
+      
+      hostPeer = new Peer(hostId, {
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' }
+          ]
+        },
+        debug: 2
+      });
+
+      hostPeer.on('open', (id) => {
+        log(`✅ Host created: ${id}`, 'success');
+        showResult('host-result', `✅ Host is ready and waiting for connections`, true);
+        document.getElementById('host-code').textContent = `Room Code: ${roomCode}`;
+      });
+
+      hostPeer.on('connection', (conn) => {
+        log(`📱 Controller connecting: ${conn.peer}`);
+        hostConnection = conn;
+
+        conn.on('open', () => {
+          log(`✅ Controller connected successfully!`, 'success');
+          showResult('host-result', `✅ Controller connected!`, true);
+          
+          // Send test message
+          conn.send({ type: 'test', message: 'Hello from host!' });
+        });
+
+        conn.on('data', (data) => {
+          log(`📩 Received from controller: ${JSON.stringify(data)}`);
+        });
+
+        conn.on('error', (error) => {
+          log(`❌ Connection error: ${error}`, 'error');
+        });
+      });
+
+      hostPeer.on('error', (error) => {
+        log(`❌ Host error: ${error.message}`, 'error');
+        showResult('host-result', `❌ ERROR: ${error.message}`, false);
+      });
+    }
+
+    function connectController() {
+      const code = document.getElementById('connect-code').value;
+      
+      if (!code || code.length !== 4) {
+        showResult('controller-result', '❌ Please enter a 4-digit code', false);
+        return;
+      }
+
+      log(`Connecting to host-${code}...`);
+      
+      controllerPeer = new Peer({
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' }
+          ]
+        },
+        debug: 2
+      });
+
+      controllerPeer.on('open', (id) => {
+        log(`✅ Controller peer created: ${id}`, 'success');
+        
+        // Try to connect to host
+        const conn = controllerPeer.connect(`host-${code}`, {
+          reliable: true
+        });
+
+        conn.on('open', () => {
+          log(`✅ Connected to host successfully!`, 'success');
+          showResult('controller-result', `✅ Connected to host!`, true);
+          
+          // Send test message
+          conn.send({ type: 'test', message: 'Hello from controller!' });
+        });
+
+        conn.on('data', (data) => {
+          log(`📩 Received from host: ${JSON.stringify(data)}`);
+        });
+
+        conn.on('error', (error) => {
+          log(`❌ Connection error: ${error}`, 'error');
+          showResult('controller-result', `❌ Connection failed: ${error.type}`, false);
+        });
+      });
+
+      controllerPeer.on('error', (error) => {
+        log(`❌ Controller error: ${error.message}`, 'error');
+        showResult('controller-result', `❌ ERROR: ${error.message}`, false);
+      });
+    }
+
+    // Auto-test on load
+    window.onload = () => {
+      log('=== PeerJS Diagnostic Tool Started ===');
+      log('Browser: ' + navigator.userAgent);
+      log('Online: ' + navigator.onLine);
+    };
+  </script>
+</body>
+</html>

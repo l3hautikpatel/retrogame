@@ -1,0 +1,48 @@
+{
+  "games": [
+    {
+      "id": "game_001",
+      "title": "Super Mario Bros",
+      "system": "nes",
+      "core": "nes",
+      "romPath": "assets/roms/super-mario-bros.nes",
+      "coverImage": "assets/images/image.png",
+      "description": "The classic platformer that started it all",
+      "releaseYear": 1985,
+      "mapping": "nintendo"
+    }
+    
+  ],
+  "systems": {
+    "nes": {
+      "name": "Nintendo Entertainment System",
+      "core": "nes",
+      "extensions": [".nes"]
+    },
+    "snes": {
+      "name": "Super Nintendo",
+      "core": "snes",
+      "extensions": [".sfc", ".smc"]
+    },
+    "genesis": {
+      "name": "Sega Genesis",
+      "core": "segaMD",
+      "extensions": [".bin", ".md", ".gen"]
+    },
+    "gba": {
+      "name": "Game Boy Advance",
+      "core": "gba",
+      "extensions": [".gba"]
+    },
+    "n64": {
+      "name": "Nintendo 64",
+      "core": "n64",
+      "extensions": [".n64", ".z64"]
+    },
+    "psx": {
+      "name": "PlayStation",
+      "core": "psx",
+      "extensions": [".iso", ".bin", ".cue"]
+    }
+  }
+}

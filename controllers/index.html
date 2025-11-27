@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Retro Console - Controller</title>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="../src/css/common.css">
+  <link rel="stylesheet" href="../src/css/controller.css">
+  
+  <!-- External Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
+  <!-- Scanline Effect -->
+  <div class="scanlines"></div>
+  
+  <div id="controller-app">
+    <!-- Connection Screen -->
+    <div id="connection-screen">
+      <div class="connection-logo">🎮 CONTROLLER</div>
+      
+      <form class="connection-form" id="connection-form">
+        <div class="input-group">
+          <label for="room-code-input">Enter Room Code</label>
+          <input 
+            type="text" 
+            id="room-code-input" 
+            placeholder="0000" 
+            maxlength="4" 
+            pattern="[0-9]{4}"
+            required
+            autocomplete="off"
+          >
+        </div>
+        
+        <button type="submit" class="btn">Connect</button>
+        <button type="button" class="btn btn-secondary" id="test-connection-btn" style="background: #1a1a2e; border-color: #00d9ff; color: #00d9ff;">
+          Test Connection
+        </button>
+      </form>
+      
+      <p class="instructions mt-lg">
+        Enter the 4-digit code shown on the TV screen
+      </p>
+    </div>
+
+    <!-- Controller Screen -->
+    <div id="controller-screen">
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <div id="connection-status" class="status-disconnected">Disconnected</div>
+        <div id="room-display"></div>
+      </div>
+
+      <!-- Shoulder Buttons (L/R Triggers) -->
+      <div class="shoulder-buttons">
+        <div class="shoulder-left">
+          <button class="shoulder-btn" id="btn-l2">L2</button>
+          <button class="shoulder-btn" id="btn-l">L</button>
+        </div>
+        <div class="shoulder-right">
+          <button class="shoulder-btn" id="btn-r2">R2</button>
+          <button class="shoulder-btn" id="btn-r">R</button>
+        </div>
+      </div>
+
+      <!-- Main Controller Layout -->
+      <div class="controller-layout">
+        <!-- D-Pad (Left Side) -->
+        <div class="dpad-container">
+          <div class="dpad">
+            <button class="dpad-btn" id="dpad-up">▲</button>
+            <button class="dpad-btn" id="dpad-left">◄</button>
+            <div id="dpad-center"></div>
+            <button class="dpad-btn" id="dpad-right">►</button>
+            <button class="dpad-btn" id="dpad-down">▼</button>
+          </div>
+        </div>
+
+        <!-- System Buttons (Center) -->
+        <div class="system-buttons">
+          <button class="system-btn" id="btn-select">SELECT</button>
+          <button class="system-btn" id="btn-start">START</button>
+        </div>
+
+        <!-- Face Buttons (Right Side) -->
+        <div class="face-buttons-container">
+          <div class="face-buttons">
+            <button class="face-btn" id="btn-y">Y</button>
+            <button class="face-btn" id="btn-x">X</button>
+            <button class="face-btn" id="btn-b">B</button>
+            <button class="face-btn" id="btn-a">A</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controller Info Overlay -->
+    <div id="controller-info"></div>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script type="module">
+    import { PeerManager } from '../src/js/peer-manager.js';
+    import { ControllerUI } from '../src/js/controller-ui.js';
+    import { 
+      getUrlParameter, 
+      showNotification, 
+      preventScroll,
+      log
+    } from '../src/js/utils.js';
+
+    // Application State
+    let peerManager;
+    let controllerUI;
+    let roomCode;
+    let connected = false;
+
+    // Initialize the application
+    async function init() {
+      try {
+        log('Initializing controller application...');
+
+        // Prevent page scroll
+        preventScroll();
+
+        // Initialize PeerJS
+        peerManager = new PeerManager(false);
+        await peerManager.initialize();
+
+        // Initialize Controller UI
+        controllerUI = new ControllerUI(peerManager);
+
+        // Check for auto-connect via URL parameter
+        const urlRoomCode = getUrlParameter('code');
+        if (urlRoomCode && urlRoomCode.length === 4) {
+          document.getElementById('room-code-input').value = urlRoomCode;
+          // Auto-connect after a short delay
+          setTimeout(() => {
+            connectToHost(urlRoomCode);
+          }, 500);
+        }
+
+        // Setup event listeners
+        setupEventListeners();
+
+        // Handle messages from host
+        peerManager.onData((data) => {
+          if (data.type === 'welcome') {
+            controllerUI.showControllerInfo(data.controllerId);
+            controllerUI.updateConnectionStatus(true, data.controllerId, data.active);
+          } else if (data.type === 'active_status') {
+            // Handle active/inactive status changes
+            controllerUI.setActiveStatus(data.active);
+            showNotification(data.message, data.active ? 'success' : 'warning');
+          }
+        });
+
+        // Handle disconnection
+        peerManager.onDisconnection(() => {
+          connected = false;
+          controllerUI.updateConnectionStatus(false);
+          controllerUI.setEnabled(false);
+          showConnectionScreen();
+          showNotification('Disconnected from console', 'warning');
+        });
+
+        log('Controller application initialized successfully');
+
+      } catch (error) {
+        console.error('Initialization error:', error);
+        showNotification('Failed to initialize controller', 'error');
+      }
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+      // Connection form
+      document.getElementById('connection-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const code = document.getElementById('room-code-input').value;
+        if (code.length === 4) {
+          connectToHost(code);
+        }
+      });
+
+      // Auto-format room code input
+      const roomCodeInput = document.getElementById('room-code-input');
+      roomCodeInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
+      });
+
+      // Test connection button
+      document.getElementById('test-connection-btn').addEventListener('click', () => {
+        const diagnostics = {
+          peerStatus: peerManager.peer ? {
+            id: peerManager.peer.id,
+            open: peerManager.peer.open,
+            disconnected: peerManager.peer.disconnected,
+            destroyed: peerManager.peer.destroyed
+          } : 'Not initialized',
+          browserInfo: {
+            userAgent: navigator.userAgent,
+            online: navigator.onLine,
+            connection: navigator.connection ? {
+              effectiveType: navigator.connection.effectiveType,
+              downlink: navigator.connection.downlink
+            } : 'Not available'
+          },
+          webRTCSupport: {
+            RTCPeerConnection: 'RTCPeerConnection' in window,
+            getUserMedia: 'getUserMedia' in navigator.mediaDevices || 'webkitGetUserMedia' in navigator
+          }
+        };
+        
+        console.log('Connection Diagnostics:', diagnostics);
+        
+        alert(`Connection Test:\n\n` +
+              `Peer ID: ${diagnostics.peerStatus.id}\n` +
+              `Peer Open: ${diagnostics.peerStatus.open}\n` +
+              `Online: ${diagnostics.browserInfo.online}\n` +
+              `WebRTC: ${diagnostics.webRTCSupport.RTCPeerConnection ? 'Supported' : 'Not Supported'}\n\n` +
+              `Check console for full details`);
+      });
+
+      // Prevent zoom on double tap
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', (e) => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+          e.preventDefault();
+        }
+        lastTouchEnd = now;
+      }, false);
+    }
+
+    // Connect to host
+    async function connectToHost(code) {
+      if (connected) return;
+
+      try {
+        roomCode = code;
+        showNotification('Connecting to console...', 'info');
+        
+        log(`Connecting to host-${code}...`);
+        
+        const conn = await peerManager.connectToHost(code);
+        
+        log('Connection established');
+        
+        connected = true;
+        showControllerScreen();
+        
+        // Initialize controller UI after connection
+        controllerUI.initialize();
+        controllerUI.setEnabled(true);
+        
+        // Display room code in status bar
+        document.getElementById('room-display').textContent = `Room: ${code}`;
+        
+        log('Connected to host successfully');
+
+      } catch (error) {
+        console.error('Connection error:', error);
+        showNotification('Failed to connect. Check the room code.', 'error');
+        connected = false;
+      }
+    }
+
+    // Show connection screen
+    function showConnectionScreen() {
+      document.getElementById('connection-screen').style.display = 'flex';
+      document.getElementById('controller-screen').classList.remove('active');
+      
+      // Clear input
+      document.getElementById('room-code-input').value = '';
+      document.getElementById('room-code-input').focus();
+    }
+
+    // Show controller screen
+    function showControllerScreen() {
+      document.getElementById('connection-screen').style.display = 'none';
+      document.getElementById('controller-screen').classList.add('active');
+    }
+
+    // Handle visibility change (wake up from sleep)
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        // Page hidden - release all buttons
+        if (controllerUI && connected) {
+          controllerUI.releaseAllButtons();
+        }
+      }
+    });
+
+    // Handle orientation change
+    window.addEventListener('orientationchange', () => {
+      // Adjust layout if needed
+      setTimeout(() => {
+        window.scrollTo(0, 1); // Hide address bar on mobile
+      }, 100);
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (peerManager) {
+        peerManager.destroy();
+      }
+      if (controllerUI) {
+        controllerUI.releaseAllButtons();
+      }
+    });
+
+    // Start the application
+    init();
+  </script>
+</body>
+</html>

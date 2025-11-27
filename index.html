@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Retro Console - Cloud Gaming Platform</title>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Courier New', monospace;
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+      color: #00ff00;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    .container {
+      text-align: center;
+      max-width: 800px;
+    }
+    
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      text-shadow: 0 0 20px #00ff00;
+      animation: glow 2s ease-in-out infinite;
+    }
+    
+    @keyframes glow {
+      0%, 100% { text-shadow: 0 0 20px #00ff00; }
+      50% { text-shadow: 0 0 40px #00ff00, 0 0 60px #00ff00; }
+    }
+    
+    p {
+      font-size: 1.2rem;
+      margin-bottom: 40px;
+      color: #a0a0a0;
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      padding: 20px 40px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      text-decoration: none;
+      background: #1a1a2e;
+      color: #00ff00;
+      border: 2px solid #00ff00;
+      border-radius: 10px;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    
+    .btn:hover {
+      background: #00ff00;
+      color: #0f0f23;
+      box-shadow: 0 0 30px #00ff00;
+      transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+      border-color: #00d9ff;
+      color: #00d9ff;
+    }
+    
+    .btn-secondary:hover {
+      background: #00d9ff;
+      color: #0f0f23;
+      box-shadow: 0 0 30px #00d9ff;
+    }
+    
+    .features {
+      margin-top: 60px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    
+    .feature {
+      padding: 20px;
+      background: #1a1a2e;
+      border: 1px solid #00ff00;
+      border-radius: 8px;
+    }
+    
+    .feature h3 {
+      color: #00d9ff;
+      margin-bottom: 10px;
+    }
+    
+    .feature p {
+      font-size: 0.9rem;
+      margin: 0;
+    }
+    
+    @media (max-width: 768px) {
+      h1 { font-size: 2rem; }
+      .btn { padding: 15px 30px; font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 RETRO CONSOLE</h1>
+    <p>Play classic games with your friends using your phone as a controller</p>
+    
+    <div class="buttons">
+      <a href="host/" class="btn">🖥️ HOST GAME</a>
+      <a href="controllers/" class="btn btn-secondary">📱 JOIN AS CONTROLLER</a>
+    </div>
+    
+    <div class="features">
+      <div class="feature">
+        <h3>Zero Latency</h3>
+        <p>WebRTC peer-to-peer connection for instant response</p>
+      </div>
+      <div class="feature">
+        <h3>Multi-Platform</h3>
+        <p>NES, SNES, Genesis, N64, GBA, PlayStation support</p>
+      </div>
+      <div class="feature">
+        <h3>No Installation</h3>
+        <p>Play directly in your browser, no apps required</p>
+      </div>
+      <div class="feature">
+        <h3>Upload ROMs</h3>
+        <p>Bring your own game files or use pre-loaded games</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Auto-redirect based on device type
+    function detectDevice() {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      // Check URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const role = urlParams.get('role');
+      const roomCode = urlParams.get('id');
+      
+      // If accessed via QR code from mobile
+      if (role === 'controller' && roomCode && isMobile) {
+        window.location.href = `controllers/?code=${roomCode}`;
+      }
+    }
+    
+    detectDevice();
+  </script>
+</body>
+</html>
