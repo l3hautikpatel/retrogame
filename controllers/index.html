@@ -38,9 +38,6 @@
         </div>
         
         <button type="submit" class="btn">Connect</button>
-        <button type="button" class="btn btn-secondary" id="test-connection-btn" style="background: #1a1a2e; border-color: #00d9ff; color: #00d9ff;">
-          Test Connection
-        </button>
       </form>
       
       <p class="instructions mt-lg">
@@ -50,14 +47,8 @@
 
     <!-- Controller Screen -->
     <div id="controller-screen">
-      <!-- Status Bar -->
-      <div class="status-bar">
-        <div id="connection-status" class="status-disconnected">Disconnected</div>
-        <div id="room-display"></div>
-      </div>
-
       <!-- Shoulder Buttons (L/R Triggers) -->
-      <div class="shoulder-buttons">
+      <div class="shoulder-buttons" id="shoulder-buttons">
         <div class="shoulder-left">
           <button class="shoulder-btn" id="btn-l2">L2</button>
           <button class="shoulder-btn" id="btn-l">L</button>
@@ -96,6 +87,13 @@
             <button class="face-btn" id="btn-a">A</button>
           </div>
         </div>
+      </div>
+
+      <!-- Status Bar - Bottom -->
+      <div class="status-bar">
+        <div id="connection-status" class="status-disconnected">Disconnected</div>
+        <div id="room-display"></div>
+        <button class="toggle-triggers-btn" id="toggle-triggers">Hide L/R</button>
       </div>
     </div>
 
@@ -194,39 +192,6 @@
         e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
       });
 
-      // Test connection button
-      document.getElementById('test-connection-btn').addEventListener('click', () => {
-        const diagnostics = {
-          peerStatus: peerManager.peer ? {
-            id: peerManager.peer.id,
-            open: peerManager.peer.open,
-            disconnected: peerManager.peer.disconnected,
-            destroyed: peerManager.peer.destroyed
-          } : 'Not initialized',
-          browserInfo: {
-            userAgent: navigator.userAgent,
-            online: navigator.onLine,
-            connection: navigator.connection ? {
-              effectiveType: navigator.connection.effectiveType,
-              downlink: navigator.connection.downlink
-            } : 'Not available'
-          },
-          webRTCSupport: {
-            RTCPeerConnection: 'RTCPeerConnection' in window,
-            getUserMedia: 'getUserMedia' in navigator.mediaDevices || 'webkitGetUserMedia' in navigator
-          }
-        };
-        
-        console.log('Connection Diagnostics:', diagnostics);
-        
-        alert(`Connection Test:\n\n` +
-              `Peer ID: ${diagnostics.peerStatus.id}\n` +
-              `Peer Open: ${diagnostics.peerStatus.open}\n` +
-              `Online: ${diagnostics.browserInfo.online}\n` +
-              `WebRTC: ${diagnostics.webRTCSupport.RTCPeerConnection ? 'Supported' : 'Not Supported'}\n\n` +
-              `Check console for full details`);
-      });
-
       // Prevent zoom on double tap
       let lastTouchEnd = 0;
       document.addEventListener('touchend', (e) => {
@@ -236,6 +201,20 @@
         }
         lastTouchEnd = now;
       }, false);
+
+      // Toggle triggers button
+      document.getElementById('toggle-triggers').addEventListener('click', () => {
+        const shoulderButtons = document.getElementById('shoulder-buttons');
+        const toggleBtn = document.getElementById('toggle-triggers');
+        
+        if (shoulderButtons.classList.contains('hidden')) {
+          shoulderButtons.classList.remove('hidden');
+          toggleBtn.textContent = 'Hide L/R';
+        } else {
+          shoulderButtons.classList.add('hidden');
+          toggleBtn.textContent = 'Show L/R';
+        }
+      });
     }
 
     // Connect to host

@@ -5,13 +5,34 @@
       "title": "Super Mario Bros",
       "system": "nes",
       "core": "nes",
-      "romPath": "assets/roms/super-mario-bros.nes",
-      "coverImage": "assets/images/image.png",
+      "romPath": "../assets/roms/super-mario-bros.nes",
+      "coverImage": "../assets/images/super-mario-bros.jpg",
       "description": "The classic platformer that started it all",
       "releaseYear": 1985,
       "mapping": "nintendo"
+    },
+    {
+      "id": "game_002",
+      "title": "The Legend of Zelda",
+      "system": "nes",
+      "core": "nes",
+      "romPath": "../assets/roms/zelda.nes",
+      "coverImage": "../assets/images/zelda.jpg",
+      "description": "An epic adventure awaits",
+      "releaseYear": 1986,
+      "mapping": "nintendo"
+    },
+    {
+      "id": "game_003",
+      "title": "Sonic the Hedgehog",
+      "system": "genesis",
+      "core": "segaMD",
+      "romPath": "../assets/roms/sonic.bin",
+      "coverImage": "../assets/images/sonic.jpg",
+      "description": "Gotta go fast!",
+      "releaseYear": 1991,
+      "mapping": "sega"
     }
-    
   ],
   "systems": {
     "nes": {

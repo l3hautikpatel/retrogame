@@ -46,6 +46,7 @@
       <div class="game-selection-header">
         <h1>Select a Game</h1>
         <div class="connected-controllers" id="controllers-list"></div>
+        <div class="gamepad-status" id="gamepad-status" style="margin-top: 10px; color: #00d9ff;"></div>
       </div>
 
       <!-- Pre-loaded Games -->
@@ -74,8 +75,8 @@
     <div id="emulator-container">
       <div class="emulator-controls">
         <button class="control-btn" id="fullscreen-btn">Fullscreen</button>
+        <button class="control-btn" id="switch-controller-btn" style="display:none;">Switch Controller</button>
         <button class="control-btn" id="exit-game-btn">Exit Game</button>
-        <button class="control-btn" id="test-btn">Test Video</button>
       </div>
       
       <!-- Main game container - EmulatorJS will render here -->
@@ -93,6 +94,7 @@
     import { PeerManager } from '../src/js/peer-manager.js';
     import { EmulatorBridge } from '../src/js/emulator-bridge.js';
     import { GameManager } from '../src/js/game-manager.js';
+    import { GamepadManager } from '../src/js/gamepad-manager.js';
     import { 
       generateQRCode, 
       showNotification, 
@@ -105,6 +107,7 @@
     let peerManager;
     let emulatorBridge;
     let gameManager;
+    let gamepadManager;
     let connectedControllers = 0;
 
     // Initialize the application
@@ -120,11 +123,13 @@
         document.getElementById('room-code').textContent = roomCode;
         
         // Generate QR Code
-        const url = window.location.origin == 'http://127.0.0.1:5500' ? 'http://192.168.2.58:5500' : window.location.origin;
+        const isLocalhost = ['127.0.0.1', 'localhost'].includes(window.location.hostname);
+        const url = isLocalhost ? 'http://192.168.2.58:5500' : `${window.location.origin}/retrogame`;
         const controllerUrl = `${url}/controllers/?code=${roomCode}`;
         document.getElementById('controller-url').textContent = controllerUrl;
         generateQRCode(controllerUrl, 'qrcode');
 
+        
         // Initialize Emulator Bridge
         emulatorBridge = new EmulatorBridge();
         await emulatorBridge.initialize();
@@ -134,6 +139,15 @@
         gameManager = new GameManager();
         await gameManager.initialize();
         populateGameLibrary();
+
+        // Initialize Physical Gamepad Manager
+        gamepadManager = new GamepadManager(emulatorBridge);
+        gamepadManager.initialize();
+        
+        // Check if gamepad is already connected
+        if (gamepadManager.hasGamepad()) {
+          showNotification('Physical gamepad detected!', 'success');
+        }
 
         // Setup event listeners
         setupEventListeners();
@@ -149,6 +163,16 @@
         peerManager.onDisconnection((controllerId) => {
           connectedControllers = Math.max(0, connectedControllers - 1);
           updateControllersList();
+          
+          // Auto-promote next controller if the active one disconnected
+          if (connectedControllers > 0) {
+            const remainingControllers = Array.from(peerManager.connections.values());
+            if (remainingControllers.length > 0 && !remainingControllers[0].active) {
+              // First remaining controller becomes active
+              peerManager.setActiveController(remainingControllers[0].controllerId);
+              showNotification(`Controller ${remainingControllers[0].controllerId} is now active`, 'info');
+            }
+          }
         });
 
         // Handle incoming controller data
@@ -183,24 +207,33 @@
 
       document.getElementById('exit-game-btn').addEventListener('click', exitGame);
 
-      // Test button to verify container
-      document.getElementById('test-btn').addEventListener('click', () => {
-        const gameContainer = document.getElementById('game');
-        console.log('Game container:', gameContainer);
-        console.log('Dimensions:', gameContainer.offsetWidth, 'x', gameContainer.offsetHeight);
-        console.log('Canvas:', gameContainer.querySelector('canvas'));
-        console.log('EJS_emulator:', window.EJS_emulator);
+      // Switch controller button
+      document.getElementById('switch-controller-btn').addEventListener('click', () => {
+        const controllers = Array.from(peerManager.connections.values());
+        if (controllers.length < 2) return;
         
-        // Try to force a test render
-        gameContainer.style.border = '2px solid red';
-        setTimeout(() => {
-          gameContainer.style.border = 'none';
-        }, 1000);
+        // Find current active
+        const currentActive = controllers.find(c => c.active);
+        if (!currentActive) return;
+        
+        // Find next controller
+        const currentIndex = controllers.indexOf(currentActive);
+        const nextIndex = (currentIndex + 1) % controllers.length;
+        const nextController = controllers[nextIndex];
+        
+        // Switch
+        peerManager.setActiveController(nextController.controllerId);
+        showNotification(`Switched to Controller ${nextController.controllerId}`, 'info');
+        updateControllersList();
       });
 
       // Game start callback
       gameManager.onGameStart((game) => {
         showEmulator(game);
+        // Start physical gamepad polling when game starts
+        if (gamepadManager) {
+          gamepadManager.start();
+        }
       });
     }
 
@@ -217,11 +250,31 @@
       const listContainer = document.getElementById('controllers-list');
       listContainer.innerHTML = '';
       
-      for (let i = 1; i <= connectedControllers; i++) {
+      const controllers = Array.from(peerManager.connections.values());
+      
+      controllers.forEach(controllerData => {
         const indicator = document.createElement('div');
-        indicator.className = 'controller-indicator active';
-        indicator.textContent = `Controller ${i}`;
+        indicator.className = 'controller-indicator' + (controllerData.active ? ' active' : '');
+        indicator.textContent = `📱 Controller ${controllerData.controllerId}${controllerData.active ? ' - ACTIVE' : ''}`;
+        indicator.style.opacity = controllerData.active ? '1' : '0.5';
         listContainer.appendChild(indicator);
+      });
+
+      // Update gamepad status
+      const gamepadStatus = document.getElementById('gamepad-status');
+      if (gamepadManager && gamepadManager.hasGamepad()) {
+        const gamepads = gamepadManager.getConnectedGamepads();
+        gamepadStatus.textContent = `🎮 Physical Gamepad: ${gamepads[0].id}`;
+      } else {
+        gamepadStatus.textContent = '';
+      }
+
+      // Show/hide switch button
+      const switchBtn = document.getElementById('switch-controller-btn');
+      if (controllers.length > 1) {
+        switchBtn.style.display = 'inline-block';
+      } else {
+        switchBtn.style.display = 'none';
       }
     }
 
@@ -278,6 +331,11 @@
 
     // Exit game and return to selection
     function exitGame() {
+      // Stop physical gamepad polling
+      if (gamepadManager) {
+        gamepadManager.stop();
+      }
+      
       gameManager.stopEmulator();
       document.getElementById('emulator-container').classList.remove('active');
       document.getElementById('game-selection').classList.remove('hidden');

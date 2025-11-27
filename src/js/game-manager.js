@@ -190,7 +190,7 @@ export class GameManager {
         window.EJS_gameUrl = romPath;
         
         // Data path - using specific version
-        window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+        window.EJS_pathtodata = 'https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@4.0.8/data/';
         
         // Start settings
         window.EJS_startOnLoaded = true;
@@ -223,6 +223,7 @@ export class GameManager {
         // Load EmulatorJS
         const script = document.createElement('script');
         script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+
         script.async = true;
         
         script.onload = () => {
