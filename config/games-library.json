@@ -6,7 +6,7 @@
       "system": "nes",
       "core": "nes",
       "romPath": "../assets/roms/super-mario-bros.nes",
-      "coverImage": "../assets/images/super-mario-bros.jpg",
+      "coverImage": "../assets/images/super-mario-bros.png",
       "description": "The classic platformer that started it all",
       "releaseYear": 1985,
       "mapping": "nintendo"
