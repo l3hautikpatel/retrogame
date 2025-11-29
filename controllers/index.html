@@ -1,45 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <title>Retro Console - Controller</title>
-  
+
   <!-- Styles -->
   <link rel="stylesheet" href="../src/css/common.css">
   <link rel="stylesheet" href="../src/css/controller.css">
-  
+
   <!-- External Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
+
 <body>
   <!-- Scanline Effect -->
   <div class="scanlines"></div>
-  
+
   <div id="controller-app">
     <!-- Connection Screen -->
     <div id="connection-screen">
       <div class="connection-logo">🎮 CONTROLLER</div>
-      
+
       <form class="connection-form" id="connection-form">
         <div class="input-group">
           <label for="room-code-input">Enter Room Code</label>
-          <input 
-            type="text" 
-            id="room-code-input" 
-            placeholder="0000" 
-            maxlength="4" 
-            pattern="[0-9]{4}"
-            required
-            autocomplete="off"
-          >
+          <input type="text" id="room-code-input" placeholder="0000" maxlength="4" pattern="[0-9]{4}" required
+            autocomplete="off">
         </div>
-        
+
         <button type="submit" class="btn">Connect</button>
       </form>
-      
+
       <p class="instructions mt-lg">
         Enter the 4-digit code shown on the TV screen
       </p>
@@ -93,6 +88,8 @@
       <div class="status-bar">
         <div id="connection-status" class="status-disconnected">Disconnected</div>
         <div id="room-display"></div>
+        <div id="connection-status" class="status-disconnected">Disconnected</div>
+        <div id="room-display"></div>
         <button class="toggle-triggers-btn" id="toggle-triggers">Hide L/R</button>
       </div>
     </div>
@@ -105,9 +102,9 @@
   <script type="module">
     import { PeerManager } from '../src/js/peer-manager.js';
     import { ControllerUI } from '../src/js/controller-ui.js';
-    import { 
-      getUrlParameter, 
-      showNotification, 
+    import {
+      getUrlParameter,
+      showNotification,
       preventScroll,
       log
     } from '../src/js/utils.js';
@@ -128,6 +125,13 @@
 
         // Initialize PeerJS
         peerManager = new PeerManager(false);
+
+        // Setup peer error listener
+        peerManager.onPeerError((error) => {
+          console.error('Peer error:', error);
+          showNotification(`Network error: ${error.type}`, 'error');
+        });
+
         await peerManager.initialize();
 
         // Initialize Controller UI
@@ -149,12 +153,8 @@
         // Handle messages from host
         peerManager.onData((data) => {
           if (data.type === 'welcome') {
-            controllerUI.showControllerInfo(data.controllerId);
-            controllerUI.updateConnectionStatus(true, data.controllerId, data.active);
-          } else if (data.type === 'active_status') {
-            // Handle active/inactive status changes
-            controllerUI.setActiveStatus(data.active);
-            showNotification(data.message, data.active ? 'success' : 'warning');
+            controllerUI.showControllerInfo(null); // No ID needed
+            controllerUI.updateConnectionStatus(true);
           }
         });
 
@@ -206,7 +206,7 @@
       document.getElementById('toggle-triggers').addEventListener('click', () => {
         const shoulderButtons = document.getElementById('shoulder-buttons');
         const toggleBtn = document.getElementById('toggle-triggers');
-        
+
         if (shoulderButtons.classList.contains('hidden')) {
           shoulderButtons.classList.remove('hidden');
           toggleBtn.textContent = 'Hide L/R';
@@ -224,28 +224,32 @@
       try {
         roomCode = code;
         showNotification('Connecting to console...', 'info');
-        
+
         log(`Connecting to host-${code}...`);
-        
+
         const conn = await peerManager.connectToHost(code);
-        
+
         log('Connection established');
-        
+
         connected = true;
         showControllerScreen();
-        
+
         // Initialize controller UI after connection
         controllerUI.initialize();
         controllerUI.setEnabled(true);
-        
+
         // Display room code in status bar
         document.getElementById('room-display').textContent = `Room: ${code}`;
-        
+
         log('Connected to host successfully');
 
       } catch (error) {
         console.error('Connection error:', error);
-        showNotification('Failed to connect. Check the room code.', 'error');
+        // Error notification is now handled by PeerManager retries mostly
+        // But if it fails completely:
+        if (!error.message.includes('timeout')) {
+          showNotification('Failed to connect. Check the room code.', 'error');
+        }
         connected = false;
       }
     }
@@ -254,7 +258,7 @@
     function showConnectionScreen() {
       document.getElementById('connection-screen').style.display = 'flex';
       document.getElementById('controller-screen').classList.remove('active');
-      
+
       // Clear input
       document.getElementById('room-code-input').value = '';
       document.getElementById('room-code-input').focus();
@@ -298,4 +302,5 @@
     init();
   </script>
 </body>
+
 </html>

@@ -11,8 +11,8 @@ export class ControllerUI {
     this.buttons = new Map();
     this.activeButtons = new Set();
     this.touchIdentifiers = new Map(); // Track which touch is on which button
-    this.isActive = true; // Whether this controller has control
-    this.controllerId = null;
+    this.touchIdentifiers = new Map(); // Track which touch is on which button
+    this.isActive = false; // Whether this controller has control
   }
 
   /**
@@ -88,10 +88,10 @@ export class ControllerUI {
    */
   handleTouchStart(event, buttonId) {
     event.preventDefault();
-    
+
     const touch = event.changedTouches[0];
     this.touchIdentifiers.set(touch.identifier, buttonId);
-    
+
     this.pressButton(buttonId);
   }
 
@@ -100,12 +100,12 @@ export class ControllerUI {
    */
   handleTouchEnd(event, buttonId) {
     event.preventDefault();
-    
+
     // Find the touch that ended
     for (let i = 0; i < event.changedTouches.length; i++) {
       const touch = event.changedTouches[i];
       const trackedButtonId = this.touchIdentifiers.get(touch.identifier);
-      
+
       if (trackedButtonId) {
         this.releaseButton(trackedButtonId);
         this.touchIdentifiers.delete(touch.identifier);
@@ -135,21 +135,21 @@ export class ControllerUI {
   pressButton(buttonId) {
     if (this.activeButtons.has(buttonId)) return; // Already pressed
     if (!this.isActive) return; // Controller not active
-    
+
     this.activeButtons.add(buttonId);
-    
+
     const config = this.buttons.get(buttonId);
     if (!config) return;
 
     // Add visual feedback
     config.element.classList.add('active');
-    
+
     // Haptic feedback
     vibrateController(30);
 
     // Send button press to host
     this.sendInput(config.button, 'press');
-    
+
     log(`Button pressed: ${config.button}`);
   }
 
@@ -159,9 +159,9 @@ export class ControllerUI {
   releaseButton(buttonId) {
     if (!this.activeButtons.has(buttonId)) return; // Not pressed
     if (!this.isActive) return; // Controller not active
-    
+
     this.activeButtons.delete(buttonId);
-    
+
     const config = this.buttons.get(buttonId);
     if (!config) return;
 
@@ -170,7 +170,7 @@ export class ControllerUI {
 
     // Send button release to host
     this.sendInput(config.button, 'release');
-    
+
     log(`Button released: ${config.button}`);
   }
 
@@ -202,54 +202,33 @@ export class ControllerUI {
   /**
    * Update UI based on connection status
    */
-  updateConnectionStatus(connected, controllerId = null, active = true) {
-    this.controllerId = controllerId;
-    this.isActive = active;
-    
+  updateConnectionStatus(connected) {
+    this.isActive = connected;
+
     const statusElement = document.getElementById('connection-status');
     if (statusElement) {
       if (connected) {
-        const statusText = active 
-          ? `Controller ${controllerId} - ACTIVE`
-          : `Controller ${controllerId} - Waiting...`;
-        statusElement.textContent = statusText;
-        statusElement.className = active ? 'status-connected' : 'status-waiting';
+        statusElement.textContent = 'Connected';
+        statusElement.className = 'status-connected';
       } else {
         statusElement.textContent = 'Disconnected';
         statusElement.className = 'status-disconnected';
       }
     }
-    
-    // Update button opacity based on active status
-    this.setEnabled(connected && active);
-  }
 
-  /**
-   * Set active status (when control is passed)
-   */
-  setActiveStatus(active) {
-    this.isActive = active;
-    this.setEnabled(active);
-    
-    const statusElement = document.getElementById('connection-status');
-    if (statusElement && this.controllerId) {
-      const statusText = active 
-        ? `Controller ${this.controllerId} - ACTIVE`
-        : `Controller ${this.controllerId} - Waiting...`;
-      statusElement.textContent = statusText;
-      statusElement.className = active ? 'status-connected' : 'status-waiting';
-    }
+    // Update button opacity based on active status
+    this.setEnabled(connected);
   }
 
   /**
    * Show controller info overlay
    */
-  showControllerInfo(controllerId) {
+  showControllerInfo(message) {
     const infoElement = document.getElementById('controller-info');
     if (infoElement) {
-      infoElement.textContent = `You are Controller ${controllerId}`;
+      infoElement.textContent = message || 'Connected to Host';
       infoElement.style.display = 'block';
-      
+
       setTimeout(() => {
         infoElement.style.display = 'none';
       }, 3000);
