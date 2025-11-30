@@ -1,69 +1,37 @@
 {
-  "games": [
-    {
-      "id": "game_001",
-      "title": "Super Mario Bros",
-      "system": "nes",
-      "core": "nes",
-      "romPath": "../assets/roms/super-mario-bros.nes",
-      "coverImage": "../assets/images/super-mario-bros.png",
-      "description": "The classic platformer that started it all",
-      "releaseYear": 1985,
-      "mapping": "nintendo"
-    },
-    {
-      "id": "game_002",
-      "title": "The Legend of Zelda",
-      "system": "nes",
-      "core": "nes",
-      "romPath": "../assets/roms/zelda.nes",
-      "coverImage": "../assets/images/zelda.jpg",
-      "description": "An epic adventure awaits",
-      "releaseYear": 1986,
-      "mapping": "nintendo"
-    },
-    {
-      "id": "game_003",
-      "title": "Sonic the Hedgehog",
-      "system": "genesis",
-      "core": "segaMD",
-      "romPath": "../assets/roms/sonic.bin",
-      "coverImage": "../assets/images/sonic.jpg",
-      "description": "Gotta go fast!",
-      "releaseYear": 1991,
-      "mapping": "sega"
-    }
-  ],
-  "systems": {
-    "nes": {
-      "name": "Nintendo Entertainment System",
-      "core": "nes",
-      "extensions": [".nes"]
-    },
-    "snes": {
-      "name": "Super Nintendo",
-      "core": "snes",
-      "extensions": [".sfc", ".smc"]
-    },
-    "genesis": {
-      "name": "Sega Genesis",
-      "core": "segaMD",
-      "extensions": [".bin", ".md", ".gen"]
-    },
-    "gba": {
-      "name": "Game Boy Advance",
-      "core": "gba",
-      "extensions": [".gba"]
-    },
-    "n64": {
-      "name": "Nintendo 64",
-      "core": "n64",
-      "extensions": [".n64", ".z64"]
-    },
-    "psx": {
-      "name": "PlayStation",
-      "core": "psx",
-      "extensions": [".iso", ".bin", ".cue"]
-    }
-  }
+    "games": [
+        {
+            "id": "game_001",
+            "title": "Super Mario Bros (Example)",
+            "system": "NES",
+            "core": "nes",
+            "romPath": "../assets/roms/super-mario-bros.nes",
+            "coverImage": "../assets/images/super-mario-bros.jpg",
+            "description": "Classic platformer - Upload your own ROM",
+            "releaseYear": 1985,
+            "mapping": "nintendo"
+        },
+        {
+            "id": "game_002",
+            "title": "Sonic the Hedgehog (Example)",
+            "system": "Genesis",
+            "core": "segaMD",
+            "romPath": "../assets/roms/sonic.bin",
+            "coverImage": "../assets/images/sonic.jpg",
+            "description": "Fast-paced platformer - Upload your own ROM",
+            "releaseYear": 1991,
+            "mapping": "sega"
+        },
+        {
+            "id": "game_003",
+            "title": "Super Mario World (Example)",
+            "system": "SNES",
+            "core": "snes",
+            "romPath": "../assets/roms/super-mario-world.sfc",
+            "coverImage": "../assets/images/super-mario-world.jpg",
+            "description": "Enhanced platformer - Upload your own ROM",
+            "releaseYear": 1990,
+            "mapping": "nintendo"
+        }
+    ]
 }

@@ -1,70 +1,74 @@
 {
-  "version": "1.0.0",
-  "mappings": {
     "nintendo": {
-      "dpad": {
-        "up": "ArrowUp",
-        "down": "ArrowDown",
-        "left": "ArrowLeft",
-        "right": "ArrowRight"
-      },
-      "face_buttons": {
-        "a": "x",
-        "b": "z",
-        "x": "s",
-        "y": "a"
-      },
-      "shoulder_buttons": {
-        "l": "q",
-        "r": "w",
-        "l2": "e",
-        "r2": "r"
-      },
-      "system_buttons": {
-        "start": "Enter",
-        "select": "Shift"
-      }
+        "face_buttons": {
+            "a": "x",
+            "b": "z",
+            "x": "s",
+            "y": "a"
+        },
+        "dpad": {
+            "up": "ArrowUp",
+            "down": "ArrowDown",
+            "left": "ArrowLeft",
+            "right": "ArrowRight"
+        },
+        "shoulder": {
+            "l": "q",
+            "r": "w",
+            "l2": "1",
+            "r2": "3"
+        },
+        "system": {
+            "start": "Enter",
+            "select": "Shift"
+        }
     },
     "sega": {
-      "dpad": {
-        "up": "ArrowUp",
-        "down": "ArrowDown",
-        "left": "ArrowLeft",
-        "right": "ArrowRight"
-      },
-      "face_buttons": {
-        "a": "z",
-        "b": "x",
-        "c": "c"
-      },
-      "system_buttons": {
-        "start": "Enter"
-      }
+        "face_buttons": {
+            "a": "z",
+            "b": "x",
+            "c": "c",
+            "x": "a",
+            "y": "s",
+            "z": "d"
+        },
+        "dpad": {
+            "up": "ArrowUp",
+            "down": "ArrowDown",
+            "left": "ArrowLeft",
+            "right": "ArrowRight"
+        },
+        "shoulder": {
+            "l": "q",
+            "r": "w"
+        },
+        "system": {
+            "start": "Enter",
+            "select": "Shift"
+        }
     },
     "playstation": {
-      "dpad": {
-        "up": "ArrowUp",
-        "down": "ArrowDown",
-        "left": "ArrowLeft",
-        "right": "ArrowRight"
-      },
-      "face_buttons": {
-        "cross": "x",
-        "circle": "z",
-        "square": "s",
-        "triangle": "a"
-      },
-      "shoulder_buttons": {
-        "l1": "q",
-        "r1": "w",
-        "l2": "e",
-        "r2": "r"
-      },
-      "system_buttons": {
-        "start": "Enter",
-        "select": "Shift"
-      }
+        "face_buttons": {
+            "cross": "x",
+            "circle": "z",
+            "square": "a",
+            "triangle": "s"
+        },
+        "dpad": {
+            "up": "ArrowUp",
+            "down": "ArrowDown",
+            "left": "ArrowLeft",
+            "right": "ArrowRight"
+        },
+        "shoulder": {
+            "l1": "q",
+            "r1": "w",
+            "l2": "1",
+            "r2": "3"
+        },
+        "system": {
+            "start": "Enter",
+            "select": "Shift"
+        }
     }
-  },
-  "default_mapping": "nintendo"
 }

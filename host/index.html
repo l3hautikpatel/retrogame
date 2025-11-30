@@ -2,384 +2,331 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Retro Console - Host</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Retro Console Host - Display games and manage controllers">
+    <title>Retro Console - Host</title>
+    <link rel="stylesheet" href="../src/css/common.css">
+    <link rel="stylesheet" href="../src/css/host.css">
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="../src/css/common.css">
-  <link rel="stylesheet" href="../src/css/host.css">
-  <style>
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 10px;
-      font-size: 0.9rem;
-      color: #888;
-    }
-
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background-color: #ffcc00;
-      /* Connecting */
-      box-shadow: 0 0 5px #ffcc00;
-    }
-
-    .status-dot.online {
-      background-color: #00ff00;
-      box-shadow: 0 0 8px #00ff00;
-    }
-
-    .status-dot.offline {
-      background-color: #ff0000;
-      box-shadow: 0 0 8px #ff0000;
-    }
-
-    /* FORCE HIDE EMULATORJS CONTROL OVERLAYS */
-    .ejs-menu,
-    .ejs-settings,
-    .ejs-controls,
-    [class*="ejs-control"],
-    [class*="ejs-settings"],
-    [class*="ejs-menu"],
-    div[style*="z-index: 99"] {
-      display: none !important;
-      opacity: 0 !important;
-      visibility: hidden !important;
-      pointer-events: none !important;
-    }
-  </style>
-
-  <!-- External Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 
 <body>
-  <!-- Scanline Effect -->
-  <div class="scanlines"></div>
-
-  <div id="app">
-    <!-- Landing Screen: Show Room Code & QR -->
-    <div id="landing-screen">
-      <div class="logo">🎮 RETRO CONSOLE</div>
-
-      <div class="room-code-container">
-        <div class="status-indicator">
-          <span id="network-status-dot" class="status-dot"></span>
-          <span id="network-status-text">Connecting...</span>
-        </div>
-        <h2>Room Code</h2>
-        <div class="room-code" id="room-code">----</div>
-        <p class="instructions">Enter this code on your mobile device to connect as a controller</p>
-      </div>
-
-      <div class="qr-code-container">
-        <div id="qrcode"></div>
-      </div>
-
-      <button id="start-button" class="btn">
-        <span id="button-text">Start Gaming</span>
-      </button>
-
-      <p class="instructions mt-lg">
-        Scan the QR code or visit <strong id="controller-url"></strong> on your phone
-      </p>
+    <!-- Room Code Badge (Top Left) -->
+    <div id="room-code-badge">
+        <span id="room-code-small">----</span>
+        <button id="show-qr-btn" class="btn-icon" title="Show QR Code">📱</button>
     </div>
 
-    <!-- Game Selection Screen -->
-    <div id="game-selection" class="hidden">
-      <div class="game-selection-header">
-        <h1>Select a Game</h1>
-        <div class="controller-status" id="controller-status">Waiting for controller...</div>
-        <div class="gamepad-status" id="gamepad-status" style="margin-top: 10px; color: #00d9ff;"></div>
-      </div>
-
-      <!-- Pre-loaded Games -->
-      <div class="game-section">
-        <h2 class="section-title">📚 Game Library</h2>
-        <div class="games-grid" id="games-grid">
-          <!-- Games will be populated here -->
-        </div>
-      </div>
-
-      <!-- Upload Custom ROM -->
-      <div class="game-section">
-        <h2 class="section-title">📂 Upload Custom ROM</h2>
-        <div class="upload-section">
-          <div class="upload-area" onclick="document.getElementById('rom-file').click()">
-            <div class="upload-icon">⬆️</div>
-            <h3>Click to Upload ROM</h3>
-            <p>Supports: NES, SNES, Genesis, N64, GBA, PSX</p>
-            <input type="file" id="rom-file" accept=".nes,.sfc,.smc,.bin,.md,.gen,.gba,.n64,.z64,.iso,.cue">
-          </div>
-        </div>
-      </div>
+    <!-- Controller Status Indicator (Top Right) -->
+    <div id="controller-indicator">
+        <span id="controller-count">0</span> 🎮
     </div>
 
-    <!-- Emulator Container -->
-    <div id="emulator-container">
-      <div class="emulator-controls">
-        <button class="control-btn" id="fullscreen-btn">Fullscreen</button>
-        <button class="control-btn" id="exit-game-btn">Exit Game</button>
-      </div>
+    <div id="host-container">
+        <!-- Game Selection View (Default) -->
+        <div id="game-selection-view" class="view active">
+            <div id="game-selection-header">
+                <h1>🎮 SELECT A GAME</h1>
+                <p class="text-muted">Choose a game or upload your own ROM</p>
+            </div>
 
-      <!-- Main game container - EmulatorJS will render here -->
-      <div id="game"></div>
+            <div id="game-grid">
+                <!-- Games will be populated here -->
+            </div>
 
-      <div class="game-info-overlay hidden" id="game-info">
-        <div class="game-info-title" id="game-info-title"></div>
-        <div class="game-info-meta" id="game-info-meta"></div>
-      </div>
+            <div id="custom-rom-upload">
+                <h3>Or Upload Custom ROM</h3>
+                <input type="file" id="rom-file-input"
+                    accept=".nes,.sfc,.smc,.bin,.md,.gen,.n64,.z64,.gba,.gb,.gbc,.iso">
+                <label for="rom-file-input" id="rom-file-label">
+                    📁 Choose ROM File
+                </label>
+                <div id="rom-file-name"></div>
+            </div>
+        </div>
+
+        <!-- Game Playing View -->
+        <div id="game-playing-view" class="view">
+            <div id="game-controls-bar">
+                <button id="back-to-games-btn" class="btn btn-small">← Back to Games</button>
+                <span id="current-game-title"></span>
+                <button id="fullscreen-btn" class="btn btn-small btn-secondary">⛶ Fullscreen</button>
+            </div>
+
+            <div id="game-container">
+                <div id="game"></div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- JavaScript Modules -->
-  <script type="module">
-    import { PeerManager } from '../src/js/peer-manager.js';
-    import { EmulatorBridge } from '../src/js/emulator-bridge.js';
-    import { GameManager } from '../src/js/game-manager.js';
-    import { GamepadManager } from '../src/js/gamepad-manager.js';
-    import {
-      generateQRCode,
-      showNotification,
-      requestFullscreen,
-      log,
-      getUrlParameter
-    } from '../src/js/utils.js';
+    <!-- QR Code Popup (Shows when no controllers connected) -->
+    <div id="qr-popup" class="popup">
+        <div class="popup-content">
+            <button id="close-qr-popup" class="close-btn">×</button>
+            <h2>Connect Controller</h2>
+            <p>Scan this QR code with your phone</p>
+            <div id="qrcode"></div>
+            <div id="room-code-display-popup">----</div>
+            <p class="text-muted">Or enter code manually in controller app</p>
+        </div>
+    </div>
 
-    // Application State
-    let peerManager;
-    let emulatorBridge;
-    let gameManager;
-    let gamepadManager;
+    <!-- JavaScript Modules -->
+    <script src="../src/js/utils.js"></script>
+    <script src="../src/js/peer-manager.js"></script>
+    <script src="../src/js/emulator-bridge.js"></script>
+    <script src="../src/js/game-manager.js"></script>
+    <script src="../src/js/gamepad-manager.js"></script>
 
-    // Initialize the application
-    async function init() {
-      try {
-        log('Initializing host application...');
+    <!-- Host Application Script -->
+    <script>
+        // Global instances
+        let peerManager;
+        let emulatorBridge;
+        let gameManager;
+        let gamepadManager;
+        let controllerCount = 0;
 
-        // Initialize PeerJS
-        peerManager = new PeerManager(true);
+        // Initialize application
+        async function init() {
+            Utils.log('Initializing host application...');
 
-        // Setup peer error/status listeners
-        peerManager.onPeerError((error) => {
-          updateNetworkStatus(false, error.type || 'Error');
-        });
+            // Initialize managers
+            peerManager = new PeerManager(true);
+            emulatorBridge = new EmulatorBridge();
+            gameManager = new GameManager();
+            gamepadManager = new GamepadManager(emulatorBridge);
 
-        const { roomCode } = await peerManager.initialize();
+            // Load configurations
+            await emulatorBridge.initialize();
+            await gameManager.initialize();
 
-        updateNetworkStatus(true);
+            // Initialize peer connection
+            const { roomCode } = await peerManager.initialize();
 
-        // Display room code
-        document.getElementById('room-code').textContent = roomCode;
+            // Display room code in badge
+            document.getElementById('room-code-small').textContent = roomCode;
+            document.getElementById('room-code-display-popup').textContent = roomCode;
 
-        // Generate QR Code
-        const controllerUrl = `${window.location.origin}/controllers/?code=${roomCode}`;
-        document.getElementById('controller-url').textContent = controllerUrl;
-        generateQRCode(controllerUrl, 'qrcode');
+            // Generate QR code
+            const baseUrl = window.location.origin;
+            Utils.generateQRCode(roomCode, 'qrcode', baseUrl);
 
-        // Initialize Emulator Bridge
-        emulatorBridge = new EmulatorBridge();
-        await emulatorBridge.initialize();
-        emulatorBridge.setEmulatorElement(document.getElementById('game'));
+            // Setup peer event listeners
+            setupPeerListeners();
 
-        // Initialize Game Manager
-        gameManager = new GameManager();
-        await gameManager.initialize();
-        populateGameLibrary();
+            // Setup UI event listeners
+            setupUIListeners();
 
-        // Initialize Physical Gamepad Manager
-        gamepadManager = new GamepadManager(emulatorBridge);
-        gamepadManager.initialize();
+            // Initialize gamepad support
+            gamepadManager.initialize();
 
-        // Check if gamepad is already connected
-        if (gamepadManager.hasGamepad()) {
-          showNotification('Physical gamepad detected!', 'success');
+            // Populate game list
+            populateGameGrid();
+
+            // Show QR popup initially (no controllers connected)
+            showQRPopup();
+
+            Utils.log('Host initialized successfully');
         }
 
-        // Setup event listeners
-        setupEventListeners();
+        // Setup peer connection listeners
+        function setupPeerListeners() {
+            peerManager.onConnection((controllerId, connection) => {
+                Utils.log('Controller connected:', controllerId);
+                controllerCount++;
+                updateControllerCount();
+                hideQRPopup();
+            });
 
-        // Handle incoming controller connections
-        peerManager.onConnection((peerId) => {
-          log(`Controller connected: ${peerId}`);
-          updateControllerStatus(true);
-        });
+            peerManager.onDisconnection((controllerId) => {
+                Utils.log('Controller disconnected:', controllerId);
+                controllerCount--;
+                updateControllerCount();
 
-        // Handle controller disconnections
-        peerManager.onDisconnection((peerId) => {
-          log(`Controller disconnected: ${peerId}`);
-          updateControllerStatus(false);
-        });
+                // Show QR popup if all controllers disconnected
+                if (controllerCount === 0) {
+                    showQRPopup();
+                }
+            });
 
-        // Handle incoming controller data
-        peerManager.onData((data, peerId) => {
-          if (data.type === 'input') {
-            // Route input to emulator bridge
-            emulatorBridge.handleControllerInput(data);
-          }
-        });
-
-        log('Host application initialized successfully');
-        showNotification('Waiting for controllers to connect...', 'info');
-
-      } catch (error) {
-        console.error('Initialization error:', error);
-        showNotification('Failed to initialize host', 'error');
-      }
-    }
-
-    // Setup event listeners
-    function setupEventListeners() {
-      // Start button
-      document.getElementById('start-button').addEventListener('click', showGameSelection);
-
-      // Emulator controls
-      document.getElementById('fullscreen-btn').addEventListener('click', () => {
-        requestFullscreen(document.getElementById('emulator-container'));
-      });
-
-      // ROM upload
-      document.getElementById('rom-file').addEventListener('change', handleRomUpload);
-
-      // Emulator controls
-      document.getElementById('fullscreen-btn').addEventListener('click', () => {
-        requestFullscreen(document.getElementById('emulator-container'));
-      });
-
-      document.getElementById('exit-game-btn').addEventListener('click', exitGame);
-
-      // Game start callback
-      gameManager.onGameStart((game) => {
-        showEmulator(game);
-        // Start physical gamepad polling when game starts
-        if (gamepadManager) {
-          gamepadManager.start();
+            peerManager.onData((data, controllerId) => {
+                handleControllerData(data, controllerId);
+            });
         }
-      });
-    }
 
-    // Update network status indicator
-    function updateNetworkStatus(isOnline, message = '') {
-      const dot = document.getElementById('network-status-dot');
-      const text = document.getElementById('network-status-text');
+        // Handle data from controller
+        function handleControllerData(data, controllerId) {
+            if (!data || !data.type) return;
 
-      if (isOnline) {
-        dot.className = 'status-dot online';
-        text.textContent = 'Online';
-        text.style.color = '#00ff00';
-      } else {
-        dot.className = 'status-dot offline';
-        text.textContent = message ? `Offline: ${message}` : 'Offline';
-        text.style.color = '#ff4444';
-      }
-    }
+            Utils.log('Received data from controller', controllerId, ':', data);
 
-    // Update controller status display
-    function updateControllerStatus(connected) {
-      const statusEl = document.getElementById('controller-status');
+            switch (data.type) {
+                case 'input':
+                    // Pass input to emulator bridge
+                    Utils.log('Processing input:', data.button, data.action);
+                    emulatorBridge.handleControllerInput(data);
+                    break;
 
-      if (connected) {
-        statusEl.textContent = '📱 Controller Connected';
-        statusEl.className = 'controller-status connected';
-        statusEl.style.color = '#00ff00';
-      } else {
-        statusEl.textContent = 'Waiting for controller...';
-        statusEl.className = 'controller-status';
-        statusEl.style.color = '#888';
-      }
+                case 'request_control':
+                    // Switch active controller
+                    peerManager.setActiveController(controllerId);
+                    break;
+            }
+        }
 
-      // Update gamepad status
-      const gamepadStatus = document.getElementById('gamepad-status');
-      if (gamepadManager && gamepadManager.hasGamepad()) {
-        const gamepads = gamepadManager.getConnectedGamepads();
-        gamepadStatus.textContent = `🎮 Physical Gamepad: ${gamepads[0].id}`;
-      } else {
-        gamepadStatus.textContent = '';
-      }
-    }
+        // Update controller count display
+        function updateControllerCount() {
+            document.getElementById('controller-count').textContent = controllerCount;
+        }
 
-    // Show game selection screen
-    function showGameSelection() {
-      document.getElementById('landing-screen').classList.add('hidden');
-      document.getElementById('game-selection').classList.remove('hidden');
-    }
+        // Show QR popup
+        function showQRPopup() {
+            document.getElementById('qr-popup').classList.add('active');
+        }
 
-    // Populate game library from config
-    function populateGameLibrary() {
-      const gamesGrid = document.getElementById('games-grid');
-      const games = gameManager.getGames();
+        // Hide QR popup
+        function hideQRPopup() {
+            document.getElementById('qr-popup').classList.remove('active');
+        }
 
-      games.forEach(game => {
-        const gameCard = document.createElement('div');
-        gameCard.className = 'game-card';
-        gameCard.innerHTML = `
-          <div class="game-cover">🎮</div>
-          <div class="game-title">${game.title}</div>
-          <div class="game-system">${game.system.toUpperCase()}</div>
-        `;
+        // Switch to game selection view
+        function showGameSelection() {
+            document.getElementById('game-selection-view').classList.add('active');
+            document.getElementById('game-playing-view').classList.remove('active');
+        }
 
-        gameCard.addEventListener('click', () => {
-          gameManager.loadGame(game.id);
+        // Switch to game playing view
+        function showGamePlaying(gameTitle) {
+            document.getElementById('game-selection-view').classList.remove('active');
+            document.getElementById('game-playing-view').classList.add('active');
+            document.getElementById('current-game-title').textContent = gameTitle;
+        }
+
+        // Setup UI event listeners
+        function setupUIListeners() {
+            // Show QR button
+            document.getElementById('show-qr-btn').addEventListener('click', () => {
+                showQRPopup();
+            });
+
+            // Close QR popup
+            document.getElementById('close-qr-popup').addEventListener('click', () => {
+                hideQRPopup();
+            });
+
+            // Close popup on background click
+            document.getElementById('qr-popup').addEventListener('click', (e) => {
+                if (e.target.id === 'qr-popup') {
+                    hideQRPopup();
+                }
+            });
+
+            // ROM file input
+            document.getElementById('rom-file-input').addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    document.getElementById('rom-file-name').textContent = `Selected: ${file.name}`;
+                    await loadCustomRom(file);
+                }
+            });
+
+            // Back to games button
+            document.getElementById('back-to-games-btn').addEventListener('click', () => {
+                gameManager.stopEmulator();
+                showGameSelection();
+            });
+
+            // Fullscreen button
+            document.getElementById('fullscreen-btn').addEventListener('click', () => {
+                const container = document.getElementById('game-container');
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                }
+            });
+        }
+
+        // Populate game grid
+        function populateGameGrid() {
+            const gameGrid = document.getElementById('game-grid');
+            const games = gameManager.getGames();
+
+            gameGrid.innerHTML = '';
+
+            games.forEach(game => {
+                const gameCard = document.createElement('div');
+                gameCard.className = 'game-card';
+                gameCard.innerHTML = `
+                    <div class="game-icon">🎮</div>
+                    <h3>${game.title}</h3>
+                    <p>${game.system}</p>
+                    <p class="text-muted">${game.description || ''}</p>
+                `;
+
+                gameCard.addEventListener('click', () => {
+                    loadGame(game.id);
+                });
+
+                gameGrid.appendChild(gameCard);
+            });
+        }
+
+        // Load game from library
+        async function loadGame(gameId) {
+            Utils.log('Loading game:', gameId);
+
+            // Get game info
+            const game = gameManager.getGameById(gameId);
+            if (!game) return;
+
+            // Set mapping scheme
+            if (game.mapping) {
+                emulatorBridge.setMappingScheme(game.mapping);
+            }
+
+            // Load game
+            await gameManager.loadGame(gameId);
+
+            // Switch to playing view
+            showGamePlaying(game.title);
+        }
+
+        // Load custom ROM
+        async function loadCustomRom(file) {
+            Utils.log('Loading custom ROM:', file.name);
+
+            // Load ROM
+            const success = await gameManager.loadCustomRom(file);
+
+            if (success) {
+                const currentGame = gameManager.getCurrentGame();
+                if (currentGame && currentGame.mapping) {
+                    emulatorBridge.setMappingScheme(currentGame.mapping);
+                }
+
+                // Switch to playing view
+                showGamePlaying(file.name);
+            }
+        }
+
+        // Start application when page loads
+        window.addEventListener('load', init);
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (peerManager) {
+                peerManager.destroy();
+            }
+            if (gamepadManager) {
+                gamepadManager.stop();
+            }
         });
-
-        gamesGrid.appendChild(gameCard);
-      });
-    }
-
-    // Handle ROM file upload
-    async function handleRomUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      await gameManager.loadCustomRom(file);
-    }
-
-    // Show emulator screen
-    function showEmulator(game) {
-      document.getElementById('game-selection').classList.add('hidden');
-      document.getElementById('emulator-container').classList.add('active');
-
-      // Show game info
-      const gameInfo = document.getElementById('game-info');
-      document.getElementById('game-info-title').textContent = game.title;
-      document.getElementById('game-info-meta').textContent =
-        game.system ? `${game.system.toUpperCase()} • ${game.releaseYear || 'Custom ROM'}` : 'Custom ROM';
-
-      gameInfo.classList.remove('hidden');
-      setTimeout(() => gameInfo.classList.add('hidden'), 5000);
-    }
-
-    // Exit game and return to selection
-    function exitGame() {
-      // Stop physical gamepad polling
-      if (gamepadManager) {
-        gamepadManager.stop();
-      }
-
-      gameManager.stopEmulator();
-      document.getElementById('emulator-container').classList.remove('active');
-      document.getElementById('game-selection').classList.remove('hidden');
-    }
-
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', () => {
-      if (peerManager) {
-        peerManager.destroy();
-      }
-      if (emulatorBridge) {
-        emulatorBridge.releaseAllKeys();
-      }
-    });
-
-    // Start the application
-    init();
-  </script>
+    </script>
 </body>
 
 </html>

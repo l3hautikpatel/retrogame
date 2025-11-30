@@ -1,0 +1,31 @@
+# ROM files (copyrighted content)
+assets/roms/*.nes
+assets/roms/*.sfc
+assets/roms/*.smc
+assets/roms/*.bin
+assets/roms/*.md
+assets/roms/*.n64
+assets/roms/*.z64
+assets/roms/*.gba
+assets/roms/*.iso
+
+# User uploads
+uploads/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local

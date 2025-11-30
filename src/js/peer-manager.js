@@ -1,385 +1,372 @@
 /**
- * PeerJS Connection Manager
- * Handles WebRTC peer-to-peer connections between Host and Controllers
+ * PeerManager - WebRTC Connection Manager
+ * Handles peer-to-peer connections between host and controllers using PeerJS
  */
 
-import { generateRoomCode, showNotification, log } from './utils.js';
+class PeerManager {
+    constructor(isHost = false) {
+        this.isHost = isHost;
+        this.peer = null;
+        this.connections = new Map(); // controllerId -> connection
+        this.activeControllerId = null;
+        this.roomCode = null;
+        this.peerId = null;
+        this.connectionTimeout = 20000; // 20 seconds
 
-export class PeerManager {
-  constructor(isHost = false) {
-    this.isHost = isHost;
-    this.peer = null;
-    this.activeConnections = new Map(); // Map<peerId, connection> - support multiple controllers
-    this.onDataCallback = null;
-    this.onConnectionCallback = null;
-    this.onDisconnectionCallback = null;
-    this.onPeerErrorCallback = null;
-    this.roomCode = null;
-  }
+        // Callbacks
+        this.onDataCallback = null;
+        this.onConnectionCallback = null;
+        this.onDisconnectionCallback = null;
+        this.onOpenCallback = null;
+        this.onErrorCallback = null;
+    }
 
-  /**
-   * Initialize PeerJS with custom configuration and fallback servers
-   */
-  async initialize() {
-    try {
-      // Generate or retrieve room code
-      this.roomCode = this.isHost ? generateRoomCode() : null;
-
-      const peerId = this.isHost ? `host-${this.roomCode}` : null;
-
-      // Simple PeerJS configuration - using default cloud server
-      this.peer = new Peer(peerId, {
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-          ]
-        },
-        debug: 0
-      });
-
-      return new Promise((resolve, reject) => {
-        this.peer.on('open', (id) => {
-          log('Peer initialized with ID:', id);
-
-          if (this.isHost) {
-            this.setupHostListeners();
-            resolve({ roomCode: this.roomCode, peerId: id });
-          } else {
-            resolve({ peerId: id });
-          }
-        });
-
-        this.peer.on('error', (error) => {
-          console.error('Peer error:', error);
-          showNotification(`Connection error: ${error.type}`, 'error');
-
-          if (this.onPeerErrorCallback) {
-            this.onPeerErrorCallback(error);
-          }
-
-          // Only reject if we haven't resolved yet (initialization phase)
-          // Otherwise this is a runtime error
-          if (!this.peer.id) {
-            reject(error);
-          }
-        });
-
-        this.peer.on('disconnected', () => {
-          log('Peer disconnected from server');
-
-          if (this.onPeerErrorCallback) {
-            this.onPeerErrorCallback({ type: 'disconnected', message: 'Disconnected from signaling server' });
-          }
-
-          // Don't auto-reconnect immediately to avoid connection spam
-          setTimeout(() => {
-            if (!this.peer.destroyed) {
-              log('Attempting to reconnect...');
-              this.peer.reconnect();
+    /**
+     * Initialize PeerJS connection
+     * @returns {Promise<{roomCode: string, peerId: string}>}
+     */
+    async initialize() {
+        return new Promise((resolve, reject) => {
+            if (this.isHost) {
+                // Generate room code and create peer ID
+                this.roomCode = Utils.generateRoomCode();
+                this.peerId = `host-${this.roomCode}`;
+            } else {
+                // Controller gets random peer ID
+                this.peerId = `controller-${Math.random().toString(36).substr(2, 9)}`;
             }
-          }, 3000); // Wait 3 seconds before reconnecting
-        });
 
-        this.peer.on('close', () => {
-          log('Peer connection closed');
-          showNotification('Connection closed', 'warning');
+            Utils.log('Initializing PeerJS with ID:', this.peerId);
 
-          if (this.onPeerErrorCallback) {
-            this.onPeerErrorCallback({ type: 'closed', message: 'Connection closed' });
-          }
+            try {
+                this.peer = new Peer(this.peerId, {
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    },
+                    debug: 2 // Set to 3 for verbose logging
+                });
+
+                this.peer.on('open', (id) => {
+                    Utils.log('Peer connection opened with ID:', id);
+
+                    if (this.isHost) {
+                        this.setupHostListeners();
+                    }
+
+                    if (this.onOpenCallback) {
+                        this.onOpenCallback(id);
+                    }
+
+                    resolve({
+                        roomCode: this.roomCode,
+                        peerId: id
+                    });
+                });
+
+                this.peer.on('error', (error) => {
+                    Utils.error('Peer error:', error);
+
+                    if (this.onErrorCallback) {
+                        this.onErrorCallback(error);
+                    }
+
+                    // Handle specific errors
+                    if (error.type === 'peer-unavailable') {
+                        Utils.showToast('Host not found. Check room code.', 'error');
+                    } else if (error.type === 'network') {
+                        Utils.showToast('Network error. Check connection.', 'error');
+                    }
+                });
+
+                this.peer.on('disconnected', () => {
+                    Utils.log('Peer disconnected. Attempting to reconnect...');
+                    setTimeout(() => {
+                        if (this.peer && !this.peer.destroyed) {
+                            this.peer.reconnect();
+                        }
+                    }, 1000);
+                });
+
+            } catch (error) {
+                Utils.error('Failed to initialize PeerJS:', error);
+                reject(error);
+            }
         });
-      });
-    } catch (error) {
-      console.error('Failed to initialize peer:', error);
-      throw error;
     }
-  }
 
-  /**
-   * Host: Setup listeners for incoming controller connections
-   */
-  setupHostListeners() {
-    this.peer.on('connection', (conn) => {
-      log('New controller connection attempt:', conn.peer);
+    /**
+     * Setup listeners for incoming connections (host only)
+     */
+    setupHostListeners() {
+        if (!this.isHost) return;
 
-      // Check if this peer is already connected
-      if (this.activeConnections.has(conn.peer)) {
-        log('Peer already connected, closing old connection');
-        const oldConn = this.activeConnections.get(conn.peer);
-        oldConn.close();
-      }
+        this.peer.on('connection', (conn) => {
+            const controllerId = this.connections.size + 1;
+            Utils.log('Controller connected:', controllerId, conn.peer);
 
-      this.activeConnections.set(conn.peer, conn);
+            this.connections.set(controllerId, conn);
 
-      // Monitor connection state changes for debugging
-      this.monitorConnection(conn);
+            // Set first controller as active
+            if (this.activeControllerId === null) {
+                this.activeControllerId = controllerId;
+                Utils.log('Set active controller:', controllerId);
+            }
 
-      conn.on('open', () => {
-        log('✅ Controller connection OPEN:', conn.peer);
-        showNotification(`Controller connected: ${conn.peer}`, 'success');
+            // Setup connection event handlers
+            conn.on('open', () => {
+                Utils.log('Connection opened with controller:', controllerId);
 
-        // Send welcome  message
-        conn.send({
-          type: 'welcome',
-          message: 'Connected to Host',
-          peerId: conn.peer
+                // Send welcome message with controller ID and active status
+                conn.send({
+                    type: 'welcome',
+                    controllerId: controllerId,
+                    isActive: controllerId === this.activeControllerId,
+                    timestamp: Date.now()
+                });
+
+                if (this.onConnectionCallback) {
+                    this.onConnectionCallback(controllerId, conn);
+                }
+            });
+
+            conn.on('data', (data) => {
+                // Only process data from active controller
+                if (this.onDataCallback && controllerId === this.activeControllerId) {
+                    this.onDataCallback(data, controllerId);
+                }
+            });
+
+            conn.on('close', () => {
+                Utils.log('Controller disconnected:', controllerId);
+                this.connections.delete(controllerId);
+
+                // If active controller disconnected, set new active
+                if (controllerId === this.activeControllerId) {
+                    const remainingControllers = Array.from(this.connections.keys());
+                    this.activeControllerId = remainingControllers.length > 0 ? remainingControllers[0] : null;
+                    Utils.log('New active controller:', this.activeControllerId);
+                }
+
+                if (this.onDisconnectionCallback) {
+                    this.onDisconnectionCallback(controllerId);
+                }
+            });
+
+            conn.on('error', (error) => {
+                Utils.error('Connection error with controller', controllerId, error);
+            });
         });
-
-        if (this.onConnectionCallback) {
-          this.onConnectionCallback(conn.peer);
-        }
-      });
-
-      conn.on('data', (data) => {
-        // Route incoming controller data to callback with peer ID
-        if (this.onDataCallback) {
-          this.onDataCallback(data, conn.peer);
-        }
-      });
-
-      conn.on('close', () => {
-        log('Controller connection closed:', conn.peer);
-        showNotification(`Controller disconnected: ${conn.peer}`, 'warning');
-
-        if (this.activeConnections.get(conn.peer) === conn) {
-          this.activeConnections.delete(conn.peer);
-        }
-
-        if (this.onDisconnectionCallback) {
-          this.onDisconnectionCallback(conn.peer);
-        }
-      });
-
-      conn.on('error', (error) => {
-        console.error('Connection error:', conn.peer, error);
-      });
-    });
-  }
-
-  /**
-   * Monitor connection state for debugging
-   */
-  monitorConnection(conn) {
-    // These are internal PeerJS/WebRTC properties, might vary by version
-    // but useful for debugging
-    if (conn.peerConnection) {
-      conn.peerConnection.onicestatechange = () => {
-        log(`ICE State: ${conn.peerConnection.iceConnectionState}`);
-      };
-      conn.peerConnection.onconnectionstatechange = () => {
-        log(`Connection State: ${conn.peerConnection.connectionState}`);
-      };
-      conn.peerConnection.onsignalingstatechange = () => {
-        log(`Signaling State: ${conn.peerConnection.signalingState}`);
-      };
     }
-  }
 
-  /**
-   * Controller: Connect to host using room code
-   */
-  async connectToHost(roomCode, retryCount = 0) {
-    return new Promise((resolve, reject) => {
-      const hostId = `host-${roomCode}`;
-      log(`Attempting to connect to host: ${hostId} (Attempt ${retryCount + 1})`);
+    /**
+     * Connect to host (controller only)
+     * @param {string} roomCode - Room code to join
+     * @returns {Promise<Connection>}
+     */
+    async connectToHost(roomCode) {
+        if (this.isHost) {
+            throw new Error('Host cannot connect to another host');
+        }
 
-      if (retryCount === 0) {
-        showNotification('Connecting...', 'info');
-      }
+        return new Promise((resolve, reject) => {
+            const hostPeerId = `host-${roomCode}`;
+            Utils.log('Connecting to host:', hostPeerId);
 
-      log('Creating connection...');
-      const conn = this.peer.connect(hostId, {
-        reliable: true,
-        serialization: 'json'
-      });
+            const conn = this.peer.connect(hostPeerId, {
+                reliable: true
+            });
 
-      log('Connection object created, waiting for open event...');
+            const timeout = setTimeout(() => {
+                Utils.error('Connection timeout');
+                conn.close();
+                reject(new Error('Connection timeout'));
+            }, this.connectionTimeout);
 
-      let connectionTimeout;
+            conn.on('open', () => {
+                clearTimeout(timeout);
+                Utils.log('Connected to host');
+                this.connections.set('host', conn);
+                resolve(conn);
+            });
 
-      const cleanup = () => {
-        if (connectionTimeout) clearTimeout(connectionTimeout);
-        conn.off('open');
-        conn.off('error');
-        conn.off('close');
-      };
+            conn.on('data', (data) => {
+                if (this.onDataCallback) {
+                    this.onDataCallback(data);
+                }
+            });
 
-      conn.on('open', () => {
-        log('✅ Connection OPEN event fired!');
-        this.activeConnection = conn;
-        showNotification('Connected to console!', 'success');
+            conn.on('close', () => {
+                Utils.log('Disconnected from host');
+                this.connections.delete('host');
 
-        // Setup listeners for the established connection
-        this.setupControllerConnectionListeners(conn);
+                if (this.onDisconnectionCallback) {
+                    this.onDisconnectionCallback();
+                }
+            });
 
-        resolve(conn);
-      });
+            conn.on('error', (error) => {
+                clearTimeout(timeout);
+                Utils.error('Connection error:', error);
+                reject(error);
+            });
+        });
+    }
 
-      conn.on('error', (error) => {
-        log('❌ Connection error:', error);
-        console.error('Connection error:', error);
-      });
+    /**
+     * Send data to peer(s)
+     * @param {object} data - Data to send
+     * @param {number} [targetControllerId] - Specific controller to send to (host only)
+     */
+    send(data, targetControllerId = null) {
+        if (this.isHost) {
+            // Host sending to controllers
+            if (targetControllerId !== null) {
+                const conn = this.connections.get(targetControllerId);
+                if (conn && conn.open) {
+                    conn.send(data);
+                }
+            } else {
+                // Broadcast to all controllers
+                this.connections.forEach((conn) => {
+                    if (conn.open) {
+                        conn.send(data);
+                    }
+                });
+            }
+        } else {
+            // Controller sending to host
+            const conn = this.connections.get('host');
+            if (conn && conn.open) {
+                conn.send(data);
+            }
+        }
+    }
 
-      // We handle the actual connection failure via timeout or close events mostly
-      // PeerJS connect() doesn't always fire 'error' when host is missing
+    /**
+     * Register callback for incoming data
+     * @param {Function} callback - Callback function (data, controllerId)
+     */
+    onData(callback) {
+        this.onDataCallback = callback;
+    }
 
-      // Add a reasonable timeout
-      connectionTimeout = setTimeout(() => {
-        if (!this.activeConnection) {
-          cleanup();
-          log('⏱️ Connection timeout after 5 seconds');
+    /**
+     * Register callback for new connections
+     * @param {Function} callback - Callback function (controllerId, connection)
+     */
+    onConnection(callback) {
+        this.onConnectionCallback = callback;
+    }
 
-          if (retryCount < 2) {
-            log('Retrying connection...');
-            showNotification(`Connection timed out. Retrying... (${retryCount + 1}/3)`, 'warning');
+    /**
+     * Register callback for disconnections
+     * @param {Function} callback - Callback function (controllerId)
+     */
+    onDisconnection(callback) {
+        this.onDisconnectionCallback = callback;
+    }
+
+    /**
+     * Register callback for peer open event
+     * @param {Function} callback - Callback function (peerId)
+     */
+    onOpen(callback) {
+        this.onOpenCallback = callback;
+    }
+
+    /**
+     * Register callback for errors
+     * @param {Function} callback - Callback function (error)
+     */
+    onError(callback) {
+        this.onErrorCallback = callback;
+    }
+
+    /**
+     * Set active controller (host only)
+     * @param {number} controllerId - Controller ID to set as active
+     */
+    setActiveController(controllerId) {
+        if (!this.isHost) return;
+
+        const oldActive = this.activeControllerId;
+        this.activeControllerId = controllerId;
+
+        Utils.log('Active controller changed:', oldActive, '->', controllerId);
+
+        // Notify all controllers of active status change
+        this.connections.forEach((conn, id) => {
+            if (conn.open) {
+                conn.send({
+                    type: 'active_status',
+                    controllerId: id,
+                    isActive: id === controllerId,
+                    timestamp: Date.now()
+                });
+            }
+        });
+    }
+
+    /**
+     * Get active controller ID
+     * @returns {number|null}
+     */
+    getActiveController() {
+        return this.activeControllerId;
+    }
+
+    /**
+     * Get connection count
+     * @returns {number}
+     */
+    getConnectionCount() {
+        return this.connections.size;
+    }
+
+    /**
+     * Get all controller IDs
+     * @returns {Array<number>}
+     */
+    getControllerIds() {
+        return Array.from(this.connections.keys());
+    }
+
+    /**
+     * Check if connected
+     * @returns {boolean}
+     */
+    isConnected() {
+        return this.connections.size > 0;
+    }
+
+    /**
+     * Cleanup and destroy peer connection
+     */
+    destroy() {
+        Utils.log('Destroying peer connection');
+
+        // Close all connections
+        this.connections.forEach((conn) => {
             conn.close();
+        });
+        this.connections.clear();
 
-            setTimeout(() => {
-              this.connectToHost(roomCode, retryCount + 1)
-                .then(resolve)
-                .catch(reject);
-            }, 1000);
-          } else {
-            showNotification('Connection timeout. Is the Host online?', 'error');
-            reject(new Error('Connection timeout'));
-          }
+        // Destroy peer
+        if (this.peer) {
+            this.peer.destroy();
+            this.peer = null;
         }
-      }, 5000); // 5 second timeout per attempt
-    });
-  }
 
-  setupControllerConnectionListeners(conn) {
-    conn.on('data', (data) => {
-      log('Received data from host:', data);
-      // Handle messages from host
-      if (this.onDataCallback) {
-        this.onDataCallback(data);
-      }
-    });
-
-    conn.on('close', () => {
-      log('Connection closed');
-      showNotification('Disconnected from console', 'warning');
-      this.activeConnection = null;
-
-      if (this.onDisconnectionCallback) {
-        this.onDisconnectionCallback();
-      }
-    });
-
-    conn.on('error', (error) => {
-      log('❌ Connection error:', error);
-      console.error('Connection error:', error);
-      showNotification('Connection error occurred', 'error');
-    });
-  }
-
-  /**
-   * Send data to all connected peers (broadcast)
-   */
-  send(data) {
-    try {
-      let sentCount = 0;
-      for (const [peerId, conn] of this.activeConnections.entries()) {
-        if (conn && conn.open) {
-          conn.send(data);
-          sentCount++;
-        }
-      }
-      if (sentCount === 0) {
-        log('Attempted to send data but no active connections are open.');
-      }
-    } catch (error) {
-      console.error('Error sending data:', error);
+        this.activeControllerId = null;
+        this.roomCode = null;
+        this.peerId = null;
     }
-  }
+}
 
-  /**
-   * Send data to a specific peer
-   */
-  sendToPeer(peerId, data) {
-    try {
-      const conn = this.activeConnections.get(peerId);
-      if (conn && conn.open) {
-        conn.send(data);
-      } else {
-        log(`Attempted to send data to ${peerId} but connection is not open.`);
-      }
-    } catch (error) {
-      console.error(`Error sending data to ${peerId}:`, error);
-    }
-  }
-
-  /**
-   * Set callback for incoming data
-   */
-  onData(callback) {
-    this.onDataCallback = callback;
-  }
-
-  /**
-   * Set callback for new connections (Host only)
-   */
-  onConnection(callback) {
-    this.onConnectionCallback = callback;
-  }
-
-  /**
-   * Set callback for disconnections
-   */
-  onDisconnection(callback) {
-    this.onDisconnectionCallback = callback;
-  }
-
-  /**
-   * Set callback for peer errors/status changes
-   */
-  onPeerError(callback) {
-    this.onPeerErrorCallback = callback;
-  }
-
-  /**
-   * Get connection status
-   */
-  isConnected() {
-    return this.activeConnections.size > 0;
-  }
-
-  /**
-   * Get list of connected peer IDs
-   */
-  getConnectedPeers() {
-    const peers = [];
-    for (const [peerId, conn] of this.activeConnections.entries()) {
-      if (conn && conn.open) {
-        peers.push(peerId);
-      }
-    }
-    return peers;
-  }
-
-  /**
-   * Get number of connected peers
-   */
-  getConnectionCount() {
-    return this.getConnectedPeers().length;
-  }
-
-  /**
-   * Cleanup and destroy peer connection
-   */
-  destroy() {
-    // Close all active connections
-    for (const conn of this.activeConnections.values()) {
-      if (conn) {
-        conn.close();
-      }
-    }
-    this.activeConnections.clear();
-
-    if (this.peer) {
-      this.peer.destroy();
-    }
-  }
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = PeerManager;
 }

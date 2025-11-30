@@ -2,305 +2,279 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <title>Retro Console - Controller</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Retro Console Controller - Use your phone as a wireless gamepad">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Retro Console - Controller</title>
+    <link rel="stylesheet" href="../src/css/common.css">
+    <link rel="stylesheet" href="../src/css/controller.css">
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="../src/css/common.css">
-  <link rel="stylesheet" href="../src/css/controller.css">
-
-  <!-- External Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 
 <body>
-  <!-- Scanline Effect -->
-  <div class="scanlines"></div>
+    <div id="controller-container">
+        <!-- Connection Screen -->
+        <div id="connection-screen">
+            <h1>🎮 CONTROLLER</h1>
+            <p>Enter the room code from the host screen</p>
 
-  <div id="controller-app">
-    <!-- Connection Screen -->
-    <div id="connection-screen">
-      <div class="connection-logo">🎮 CONTROLLER</div>
+            <input type="number" id="room-code-input" placeholder="Enter 4-digit code" maxlength="4" pattern="[0-9]{4}">
 
-      <form class="connection-form" id="connection-form">
-        <div class="input-group">
-          <label for="room-code-input">Enter Room Code</label>
-          <input type="text" id="room-code-input" placeholder="0000" maxlength="4" pattern="[0-9]{4}" required
-            autocomplete="off">
+            <button id="connect-btn" class="btn btn-large">Connect</button>
+
+            <p class="text-muted mt-lg">Or scan the QR code on the host screen</p>
         </div>
 
-        <button type="submit" class="btn">Connect</button>
-      </form>
+        <!-- Gamepad Screen -->
+        <div id="gamepad-screen">
+            <!-- Triggers (Top) -->
+            <div id="triggers">
+                <div class="trigger-group">
+                    <button id="btn-l2" class="trigger-btn">L2</button>
+                    <button id="btn-l" class="trigger-btn">L</button>
+                </div>
+                <div class="trigger-group">
+                    <button id="btn-r" class="trigger-btn">R</button>
+                    <button id="btn-r2" class="trigger-btn">R2</button>
+                </div>
+            </div>
 
-      <p class="instructions mt-lg">
-        Enter the 4-digit code shown on the TV screen
-      </p>
+            <!-- Main Gamepad -->
+            <div id="gamepad">
+                <!-- D-Pad (Left) -->
+                <div id="dpad">
+                    <button id="btn-up" class="dpad-btn">▲</button>
+                    <button id="btn-left" class="dpad-btn">◄</button>
+                    <button id="btn-right" class="dpad-btn">►</button>
+                    <button id="btn-down" class="dpad-btn">▼</button>
+                </div>
+
+                <!-- Center Buttons -->
+                <div id="center-buttons">
+                    <button id="btn-select" class="system-btn">SELECT</button>
+                    <button id="btn-start" class="system-btn">START</button>
+                </div>
+
+                <!-- Face Buttons (Right) -->
+                <div id="face-buttons">
+                    <button id="btn-y" class="face-btn">Y</button>
+                    <button id="btn-b" class="face-btn">B</button>
+                    <button id="btn-a" class="face-btn">A</button>
+                    <button id="btn-x" class="face-btn">X</button>
+                </div>
+            </div>
+
+            <!-- Status Bar (Bottom) -->
+            <div id="status-bar">
+                <div id="status-info">
+                    <span class="status-dot disconnected" id="status-dot"></span>
+                    <span id="status-text">Not Connected</span>
+                    <span id="controller-info"></span>
+                </div>
+                <div id="status-actions">
+                    <button id="take-control" class="btn btn-small">Take Control</button>
+                    <button id="toggle-triggers" class="btn btn-small btn-secondary">Hide Triggers</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Controller Screen -->
-    <div id="controller-screen">
-      <!-- Shoulder Buttons (L/R Triggers) -->
-      <div class="shoulder-buttons" id="shoulder-buttons">
-        <div class="shoulder-left">
-          <button class="shoulder-btn" id="btn-l2">L2</button>
-          <button class="shoulder-btn" id="btn-l">L</button>
-        </div>
-        <div class="shoulder-right">
-          <button class="shoulder-btn" id="btn-r2">R2</button>
-          <button class="shoulder-btn" id="btn-r">R</button>
-        </div>
-      </div>
+    <!-- JavaScript Modules -->
+    <script src="../src/js/utils.js"></script>
+    <script src="../src/js/peer-manager.js"></script>
+    <script src="../src/js/controller-ui.js"></script>
 
-      <!-- Main Controller Layout -->
-      <div class="controller-layout">
-        <!-- D-Pad (Left Side) -->
-        <div class="dpad-container">
-          <div class="dpad">
-            <button class="dpad-btn" id="dpad-up">▲</button>
-            <button class="dpad-btn" id="dpad-left">◄</button>
-            <div id="dpad-center"></div>
-            <button class="dpad-btn" id="dpad-right">►</button>
-            <button class="dpad-btn" id="dpad-down">▼</button>
-          </div>
-        </div>
+    <!-- Controller Application Script -->
+    <script>
+        // Global instances
+        let peerManager;
+        let controllerUI;
+        let controllerId = null;
+        let isActive = false;
+        let roomCode = null; // Store room code
 
-        <!-- System Buttons (Center) -->
-        <div class="system-buttons">
-          <button class="system-btn" id="btn-select">SELECT</button>
-          <button class="system-btn" id="btn-start">START</button>
-        </div>
+        // Initialize application
+        async function init() {
+            Utils.log('Initializing controller application...');
 
-        <!-- Face Buttons (Right Side) -->
-        <div class="face-buttons-container">
-          <div class="face-buttons">
-            <button class="face-btn" id="btn-y">Y</button>
-            <button class="face-btn" id="btn-x">X</button>
-            <button class="face-btn" id="btn-b">B</button>
-            <button class="face-btn" id="btn-a">A</button>
-          </div>
-        </div>
-      </div>
+            // Initialize managers
+            peerManager = new PeerManager(false);
+            controllerUI = new ControllerUI(peerManager);
 
-      <!-- Status Bar - Bottom -->
-      <div class="status-bar">
-        <div id="connection-status" class="status-disconnected">Disconnected</div>
-        <div id="room-display"></div>
-        <div id="connection-status" class="status-disconnected">Disconnected</div>
-        <div id="room-display"></div>
-        <button class="toggle-triggers-btn" id="toggle-triggers">Hide L/R</button>
-      </div>
-    </div>
+            // Initialize UI
+            controllerUI.initialize();
 
-    <!-- Controller Info Overlay -->
-    <div id="controller-info"></div>
-  </div>
+            // Check for room code in URL
+            const urlCode = Utils.getUrlParameter('code');
+            if (urlCode) {
+                document.getElementById('room-code-input').value = urlCode;
+                // Auto-connect if code is in URL
+                setTimeout(() => {
+                    connectToHost();
+                }, 500);
+            }
 
-  <!-- JavaScript Modules -->
-  <script type="module">
-    import { PeerManager } from '../src/js/peer-manager.js';
-    import { ControllerUI } from '../src/js/controller-ui.js';
-    import {
-      getUrlParameter,
-      showNotification,
-      preventScroll,
-      log
-    } from '../src/js/utils.js';
+            // Setup UI event listeners
+            setupUIListeners();
 
-    // Application State
-    let peerManager;
-    let controllerUI;
-    let roomCode;
-    let connected = false;
+            Utils.log('Controller initialized successfully');
+        }
 
-    // Initialize the application
-    async function init() {
-      try {
-        log('Initializing controller application...');
+        // Setup UI event listeners
+        function setupUIListeners() {
+            // Connect button
+            document.getElementById('connect-btn').addEventListener('click', connectToHost);
 
-        // Prevent page scroll
-        preventScroll();
+            // Enter key on input
+            document.getElementById('room-code-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    connectToHost();
+                }
+            });
+        }
 
-        // Initialize PeerJS
-        peerManager = new PeerManager(false);
+        // Connect to host
+        async function connectToHost() {
+            const roomCodeInput = document.getElementById('room-code-input');
+            const inputRoomCode = roomCodeInput.value.trim();
 
-        // Setup peer error listener
-        peerManager.onPeerError((error) => {
-          console.error('Peer error:', error);
-          showNotification(`Network error: ${error.type}`, 'error');
+            if (!inputRoomCode || inputRoomCode.length !== 4) {
+                Utils.showToast('Please enter a 4-digit room code', 'error');
+                return;
+            }
+
+            // Store room code globally
+            roomCode = inputRoomCode;
+
+            Utils.log('Connecting to host with code:', roomCode);
+            Utils.showToast('Connecting...', 'info');
+
+            try {
+                // Initialize peer
+                await peerManager.initialize();
+
+                // Setup peer listeners
+                setupPeerListeners();
+
+                // Connect to host
+                await peerManager.connectToHost(roomCode);
+
+                // Show gamepad screen
+                document.getElementById('connection-screen').classList.add('hidden');
+                document.getElementById('gamepad-screen').classList.add('active');
+
+                Utils.showToast('Connected!', 'success');
+            } catch (error) {
+                Utils.error('Connection failed:', error);
+                Utils.showToast('Connection failed. Check room code.', 'error');
+            }
+        }
+
+        // Setup peer connection listeners
+        function setupPeerListeners() {
+            peerManager.onData((data) => {
+                handleHostData(data);
+            });
+
+            peerManager.onDisconnection(() => {
+                Utils.log('Disconnected from host');
+                controllerUI.updateConnectionStatus(false, null, false);
+                Utils.showToast('Disconnected from host', 'error');
+
+                // Return to connection screen
+                setTimeout(() => {
+                    document.getElementById('gamepad-screen').classList.remove('active');
+                    document.getElementById('connection-screen').classList.remove('hidden');
+                }, 2000);
+            });
+        }
+
+        // Handle data from host
+        function handleHostData(data) {
+            if (!data || !data.type) return;
+
+            switch (data.type) {
+                case 'welcome':
+                    // Received controller ID and active status
+                    controllerId = data.controllerId;
+                    isActive = data.isActive;
+                    controllerUI.updateConnectionStatus(true, controllerId, isActive, roomCode);
+                    controllerUI.showControllerInfo(controllerId);
+                    Utils.log('Received welcome:', controllerId, 'Active:', isActive);
+                    break;
+
+                case 'active_status':
+                    // Active status changed
+                    if (data.controllerId === controllerId) {
+                        isActive = data.isActive;
+                        controllerUI.setActiveStatus(isActive);
+
+                        if (isActive) {
+                            Utils.showToast('You are now active!', 'success');
+                        } else {
+                            Utils.showToast('You are now inactive', 'info');
+                        }
+                    }
+                    break;
+            }
+        }
+
+        // Prevent page refresh on pull-down
+        document.body.addEventListener('touchmove', (e) => {
+            if (document.getElementById('gamepad-screen').classList.contains('active')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Prevent zoom on double-tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // Keep screen awake (if supported)
+        if ('wakeLock' in navigator) {
+            let wakeLock = null;
+
+            async function requestWakeLock() {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    Utils.log('Wake lock acquired');
+                } catch (err) {
+                    Utils.error('Wake lock error:', err);
+                }
+            }
+
+            // Request wake lock when gamepad is active
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' &&
+                    document.getElementById('gamepad-screen').classList.contains('active')) {
+                    requestWakeLock();
+                }
+            });
+        }
+
+        // Start application when page loads
+        window.addEventListener('load', init);
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (peerManager) {
+                peerManager.destroy();
+            }
+            if (controllerUI) {
+                controllerUI.releaseAllButtons();
+            }
         });
-
-        await peerManager.initialize();
-
-        // Initialize Controller UI
-        controllerUI = new ControllerUI(peerManager);
-
-        // Check for auto-connect via URL parameter
-        const urlRoomCode = getUrlParameter('code');
-        if (urlRoomCode && urlRoomCode.length === 4) {
-          document.getElementById('room-code-input').value = urlRoomCode;
-          // Auto-connect after a short delay
-          setTimeout(() => {
-            connectToHost(urlRoomCode);
-          }, 500);
-        }
-
-        // Setup event listeners
-        setupEventListeners();
-
-        // Handle messages from host
-        peerManager.onData((data) => {
-          if (data.type === 'welcome') {
-            controllerUI.showControllerInfo(null); // No ID needed
-            controllerUI.updateConnectionStatus(true);
-          }
-        });
-
-        // Handle disconnection
-        peerManager.onDisconnection(() => {
-          connected = false;
-          controllerUI.updateConnectionStatus(false);
-          controllerUI.setEnabled(false);
-          showConnectionScreen();
-          showNotification('Disconnected from console', 'warning');
-        });
-
-        log('Controller application initialized successfully');
-
-      } catch (error) {
-        console.error('Initialization error:', error);
-        showNotification('Failed to initialize controller', 'error');
-      }
-    }
-
-    // Setup event listeners
-    function setupEventListeners() {
-      // Connection form
-      document.getElementById('connection-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const code = document.getElementById('room-code-input').value;
-        if (code.length === 4) {
-          connectToHost(code);
-        }
-      });
-
-      // Auto-format room code input
-      const roomCodeInput = document.getElementById('room-code-input');
-      roomCodeInput.addEventListener('input', (e) => {
-        e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
-      });
-
-      // Prevent zoom on double tap
-      let lastTouchEnd = 0;
-      document.addEventListener('touchend', (e) => {
-        const now = Date.now();
-        if (now - lastTouchEnd <= 300) {
-          e.preventDefault();
-        }
-        lastTouchEnd = now;
-      }, false);
-
-      // Toggle triggers button
-      document.getElementById('toggle-triggers').addEventListener('click', () => {
-        const shoulderButtons = document.getElementById('shoulder-buttons');
-        const toggleBtn = document.getElementById('toggle-triggers');
-
-        if (shoulderButtons.classList.contains('hidden')) {
-          shoulderButtons.classList.remove('hidden');
-          toggleBtn.textContent = 'Hide L/R';
-        } else {
-          shoulderButtons.classList.add('hidden');
-          toggleBtn.textContent = 'Show L/R';
-        }
-      });
-    }
-
-    // Connect to host
-    async function connectToHost(code) {
-      if (connected) return;
-
-      try {
-        roomCode = code;
-        showNotification('Connecting to console...', 'info');
-
-        log(`Connecting to host-${code}...`);
-
-        const conn = await peerManager.connectToHost(code);
-
-        log('Connection established');
-
-        connected = true;
-        showControllerScreen();
-
-        // Initialize controller UI after connection
-        controllerUI.initialize();
-        controllerUI.setEnabled(true);
-
-        // Display room code in status bar
-        document.getElementById('room-display').textContent = `Room: ${code}`;
-
-        log('Connected to host successfully');
-
-      } catch (error) {
-        console.error('Connection error:', error);
-        // Error notification is now handled by PeerManager retries mostly
-        // But if it fails completely:
-        if (!error.message.includes('timeout')) {
-          showNotification('Failed to connect. Check the room code.', 'error');
-        }
-        connected = false;
-      }
-    }
-
-    // Show connection screen
-    function showConnectionScreen() {
-      document.getElementById('connection-screen').style.display = 'flex';
-      document.getElementById('controller-screen').classList.remove('active');
-
-      // Clear input
-      document.getElementById('room-code-input').value = '';
-      document.getElementById('room-code-input').focus();
-    }
-
-    // Show controller screen
-    function showControllerScreen() {
-      document.getElementById('connection-screen').style.display = 'none';
-      document.getElementById('controller-screen').classList.add('active');
-    }
-
-    // Handle visibility change (wake up from sleep)
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        // Page hidden - release all buttons
-        if (controllerUI && connected) {
-          controllerUI.releaseAllButtons();
-        }
-      }
-    });
-
-    // Handle orientation change
-    window.addEventListener('orientationchange', () => {
-      // Adjust layout if needed
-      setTimeout(() => {
-        window.scrollTo(0, 1); // Hide address bar on mobile
-      }, 100);
-    });
-
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', () => {
-      if (peerManager) {
-        peerManager.destroy();
-      }
-      if (controllerUI) {
-        controllerUI.releaseAllButtons();
-      }
-    });
-
-    // Start the application
-    init();
-  </script>
+    </script>
 </body>
 
 </html>
