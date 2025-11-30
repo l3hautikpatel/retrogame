@@ -102,13 +102,114 @@ class ControllerUI {
             });
         }
 
-        // Take control button
-        const takeControlBtn = document.getElementById('take-control');
-        if (takeControlBtn) {
-            takeControlBtn.addEventListener('click', () => {
-                this.requestControl();
+        // Toggle D-Pad/Joystick button
+        const toggleDpadBtn = document.getElementById('toggle-dpad');
+        if (toggleDpadBtn) {
+            toggleDpadBtn.addEventListener('click', () => {
+                this.toggleDpadMode();
             });
         }
+
+        // Setup virtual joystick
+        this.setupVirtualJoystick();
+    }
+
+    /**
+     * Setup virtual joystick
+     */
+    setupVirtualJoystick() {
+        const joystick = document.getElementById('virtual-joystick');
+        const stick = document.getElementById('joystick-stick');
+
+        if (!joystick || !stick) return;
+
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let currentDirection = null;
+
+        const handleStart = (e) => {
+            if (!this.isActive || !this.isConnected) return;
+
+            isDragging = true;
+            const touch = e.touches ? e.touches[0] : e;
+            const rect = joystick.getBoundingClientRect();
+            startX = rect.left + rect.width / 2;
+            startY = rect.top + rect.height / 2;
+        };
+
+        const handleMove = (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+
+            const touch = e.touches ? e.touches[0] : e;
+            const deltaX = touch.clientX - startX;
+            const deltaY = touch.clientY - startY;
+
+            // Limit stick movement to joystick radius
+            const maxDistance = 60;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const limitedDistance = Math.min(distance, maxDistance);
+            const angle = Math.atan2(deltaY, deltaX);
+
+            const x = limitedDistance * Math.cos(angle);
+            const y = limitedDistance * Math.sin(angle);
+
+            // Move stick
+            stick.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+
+            // Determine direction
+            const threshold = 20;
+            let newDirection = null;
+
+            if (limitedDistance > threshold) {
+                const degrees = (angle * 180 / Math.PI + 360) % 360;
+
+                if (degrees >= 315 || degrees < 45) newDirection = 'right';
+                else if (degrees >= 45 && degrees < 135) newDirection = 'down';
+                else if (degrees >= 135 && degrees < 225) newDirection = 'left';
+                else if (degrees >= 225 && degrees < 315) newDirection = 'up';
+            }
+
+            // Send direction changes
+            if (newDirection !== currentDirection) {
+                // Release old direction
+                if (currentDirection) {
+                    this.sendInput(`dpad.${currentDirection}`, 'release');
+                }
+
+                // Press new direction
+                if (newDirection) {
+                    this.sendInput(`dpad.${newDirection}`, 'press');
+                }
+
+                currentDirection = newDirection;
+            }
+        };
+
+        const handleEnd = () => {
+            if (!isDragging) return;
+
+            isDragging = false;
+            stick.style.transform = 'translate(-50%, -50%)';
+
+            // Release current direction
+            if (currentDirection) {
+                this.sendInput(`dpad.${currentDirection}`, 'release');
+                currentDirection = null;
+            }
+        };
+
+        // Touch events
+        joystick.addEventListener('touchstart', handleStart, { passive: false });
+        joystick.addEventListener('touchmove', handleMove, { passive: false });
+        joystick.addEventListener('touchend', handleEnd);
+        joystick.addEventListener('touchcancel', handleEnd);
+
+        // Mouse events for testing
+        joystick.addEventListener('mousedown', handleStart);
+        document.addEventListener('mousemove', handleMove);
+        document.addEventListener('mouseup', handleEnd);
     }
 
     /**
@@ -222,26 +323,22 @@ class ControllerUI {
 
         const statusText = document.getElementById('status-text');
         const statusDot = document.getElementById('status-dot');
-        const takeControlBtn = document.getElementById('take-control');
         const controllerInfo = document.getElementById('controller-info');
 
         if (connected) {
             if (active) {
-                statusText.textContent = `Connected - Controller ${controllerId} (Active)`;
+                statusText.textContent = `Controller ${controllerId} (Active)`;
                 statusDot.className = 'status-dot connected';
-                takeControlBtn.style.display = 'none';
                 this.setEnabled(true);
             } else {
-                statusText.textContent = `Connected - Controller ${controllerId} (Inactive)`;
+                statusText.textContent = `Controller ${controllerId} (Standby)`;
                 statusDot.className = 'status-dot inactive';
-                takeControlBtn.style.display = 'block';
                 this.setEnabled(false);
             }
             controllerInfo.textContent = `Room: ${this.roomCode || 'N/A'}`;
         } else {
             statusText.textContent = 'Not Connected';
             statusDot.className = 'status-dot disconnected';
-            takeControlBtn.style.display = 'none';
             controllerInfo.textContent = '';
             this.setEnabled(false);
         }
@@ -292,20 +389,24 @@ class ControllerUI {
     }
 
     /**
-     * Request control from host
+     * Toggle between D-Pad and Joystick
      */
-    requestControl() {
-        if (!this.peerManager || !this.isConnected) {
-            return;
+    toggleDpadMode() {
+        const dpad = document.getElementById('dpad');
+        const joystick = document.getElementById('virtual-joystick');
+        const toggleBtn = document.getElementById('toggle-dpad');
+
+        if (joystick.classList.contains('active')) {
+            // Switch to D-Pad
+            joystick.classList.remove('active');
+            dpad.style.display = 'grid';
+            toggleBtn.textContent = '🕹️ Joystick';
+        } else {
+            // Switch to Joystick
+            joystick.classList.add('active');
+            dpad.style.display = 'none';
+            toggleBtn.textContent = '🎮 D-Pad';
         }
-
-        this.peerManager.send({
-            type: 'request_control',
-            controllerId: this.controllerId,
-            timestamp: Date.now()
-        });
-
-        Utils.showToast('Control requested', 'info');
     }
 
     /**

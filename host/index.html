@@ -148,6 +148,16 @@
                 controllerCount--;
                 updateControllerCount();
 
+                // If disconnected controller was active, switch to next available
+                if (controllerId === peerManager.getActiveController()) {
+                    const remainingControllers = peerManager.getControllerIds();
+                    if (remainingControllers.length > 0) {
+                        // Switch to first remaining controller
+                        peerManager.setActiveController(remainingControllers[0]);
+                        Utils.log('Switched active controller to:', remainingControllers[0]);
+                    }
+                }
+
                 // Show QR popup if all controllers disconnected
                 if (controllerCount === 0) {
                     showQRPopup();
