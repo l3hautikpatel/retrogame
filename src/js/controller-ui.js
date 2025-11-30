@@ -127,22 +127,47 @@ class ControllerUI {
         let startX = 0;
         let startY = 0;
         let currentDirection = null;
+        let touchId = null; // Track which touch is controlling the joystick
 
         const handleStart = (e) => {
             if (!this.isActive || !this.isConnected) return;
 
-            isDragging = true;
+            // Only start if touch is within joystick bounds
             const touch = e.touches ? e.touches[0] : e;
             const rect = joystick.getBoundingClientRect();
+
+            // Check if touch is within joystick area
+            if (touch.clientX < rect.left || touch.clientX > rect.right ||
+                touch.clientY < rect.top || touch.clientY > rect.bottom) {
+                return; // Touch is outside joystick, ignore
+            }
+
+            isDragging = true;
+            touchId = e.touches ? e.touches[0].identifier : null;
             startX = rect.left + rect.width / 2;
             startY = rect.top + rect.height / 2;
         };
 
         const handleMove = (e) => {
             if (!isDragging) return;
+
+            // Find the correct touch if using touch events
+            let touch;
+            if (e.touches) {
+                // Find the touch that started the drag
+                for (let i = 0; i < e.touches.length; i++) {
+                    if (e.touches[i].identifier === touchId) {
+                        touch = e.touches[i];
+                        break;
+                    }
+                }
+                if (!touch) return; // Our touch ended
+            } else {
+                touch = e;
+            }
+
             e.preventDefault();
 
-            const touch = e.touches ? e.touches[0] : e;
             const deltaX = touch.clientX - startX;
             const deltaY = touch.clientY - startY;
 
@@ -187,10 +212,23 @@ class ControllerUI {
             }
         };
 
-        const handleEnd = () => {
+        const handleEnd = (e) => {
             if (!isDragging) return;
 
+            // Check if our specific touch ended
+            if (e.changedTouches) {
+                let ourTouchEnded = false;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === touchId) {
+                        ourTouchEnded = true;
+                        break;
+                    }
+                }
+                if (!ourTouchEnded) return; // Different touch ended
+            }
+
             isDragging = false;
+            touchId = null;
             stick.style.transform = 'translate(-50%, -50%)';
 
             // Release current direction
@@ -202,9 +240,9 @@ class ControllerUI {
 
         // Touch events
         joystick.addEventListener('touchstart', handleStart, { passive: false });
-        joystick.addEventListener('touchmove', handleMove, { passive: false });
-        joystick.addEventListener('touchend', handleEnd);
-        joystick.addEventListener('touchcancel', handleEnd);
+        document.addEventListener('touchmove', handleMove, { passive: false });
+        document.addEventListener('touchend', handleEnd);
+        document.addEventListener('touchcancel', handleEnd);
 
         // Mouse events for testing
         joystick.addEventListener('mousedown', handleStart);
