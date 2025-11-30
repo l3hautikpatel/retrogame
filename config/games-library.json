@@ -14,23 +14,12 @@
         {
             "id": "game_002",
             "title": "Sonic the Hedgehog (Example)",
-            "system": "Genesis",
-            "core": "segaMD",
-            "romPath": "../assets/roms/sonic.bin",
+            "system": "NES",
+            "core": "NES",
+            "romPath": "../assets/roms/SNOWBROS.NES",
             "coverImage": "../assets/images/sonic.jpg",
             "description": "Fast-paced platformer - Upload your own ROM",
             "releaseYear": 1991,
-            "mapping": "sega"
-        },
-        {
-            "id": "game_003",
-            "title": "Super Mario World (Example)",
-            "system": "SNES",
-            "core": "snes",
-            "romPath": "../assets/roms/super-mario-world.sfc",
-            "coverImage": "../assets/images/super-mario-world.jpg",
-            "description": "Enhanced platformer - Upload your own ROM",
-            "releaseYear": 1990,
             "mapping": "nintendo"
         }
     ]

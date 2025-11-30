@@ -241,8 +241,8 @@ body {
 
 .face-btn {
     position: absolute;
-    width: 75px;
-    height: 75px;
+    width: 95px;
+    height: 95px;
     background: var(--bg-light);
     border: 3px solid var(--primary-color);
     border-radius: var(--radius-full);
