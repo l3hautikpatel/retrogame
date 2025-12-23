@@ -301,10 +301,22 @@
             }
 
             // Load game
-            await gameManager.loadGame(gameId);
+            const result = await gameManager.loadGame(gameId);
 
-            // Switch to playing view
-            showGamePlaying(game.title);
+            if (result && result.success) {
+                // Switch to playing view
+                showGamePlaying(game.title);
+
+                // Broadcast layout update
+                if (result.layout) {
+                    Utils.log('Broadcasting layout update:', result.layout);
+                    peerManager.send({
+                        type: 'layout_update',
+                        layout: result.layout,
+                        timestamp: Date.now()
+                    });
+                }
+            }
         }
 
         // Load custom ROM
@@ -312,9 +324,9 @@
             Utils.log('Loading custom ROM:', file.name);
 
             // Load ROM
-            const success = await gameManager.loadCustomRom(file);
+            const result = await gameManager.loadCustomRom(file);
 
-            if (success) {
+            if (result && result.success) {
                 const currentGame = gameManager.getCurrentGame();
                 if (currentGame && currentGame.mapping) {
                     emulatorBridge.setMappingScheme(currentGame.mapping);
@@ -322,6 +334,16 @@
 
                 // Switch to playing view
                 showGamePlaying(file.name);
+
+                // Broadcast layout update
+                if (result.layout) {
+                    Utils.log('Broadcasting layout update:', result.layout);
+                    peerManager.send({
+                        type: 'layout_update',
+                        layout: result.layout,
+                        timestamp: Date.now()
+                    });
+                }
             }
         }
 

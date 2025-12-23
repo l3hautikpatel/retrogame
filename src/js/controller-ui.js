@@ -32,6 +32,8 @@ class ControllerUI {
         this.buttons.set('btn-b', { element: document.getElementById('btn-b'), button: 'face_buttons.b' });
         this.buttons.set('btn-x', { element: document.getElementById('btn-x'), button: 'face_buttons.x' });
         this.buttons.set('btn-y', { element: document.getElementById('btn-y'), button: 'face_buttons.y' });
+        this.buttons.set('btn-c', { element: document.getElementById('btn-c'), button: 'face_buttons.c' });
+        this.buttons.set('btn-z', { element: document.getElementById('btn-z'), button: 'face_buttons.z' });
 
         // D-pad
         this.buttons.set('btn-up', { element: document.getElementById('btn-up'), button: 'dpad.up' });
@@ -454,6 +456,26 @@ class ControllerUI {
     showControllerInfo(controllerId) {
         this.controllerId = controllerId;
         Utils.showToast(`You are Controller ${controllerId}`, 'success');
+    }
+
+    /**
+     * Update controller layout based on game system
+     * @param {string} layoutType - '2btn', '4btn', '6btn'
+     */
+    updateLayout(layoutType) {
+        Utils.log('Updating layout to:', layoutType);
+        const gamepad = document.getElementById('gamepad');
+
+        // Remove existing layout classes - check specifically for layout classes to be safe
+        gamepad.classList.remove('layout-2btn', 'layout-4btn', 'layout-6btn');
+
+        // Add new layout class
+        if (layoutType) {
+            gamepad.classList.add(`layout-${layoutType}`);
+        } else {
+            // Default to 4btn if null/undefined
+            gamepad.classList.add('layout-4btn');
+        }
     }
 }
 

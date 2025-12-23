@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>GamepadPlus V3 (WebHID)</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            text-align: center;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background: #218838;
+        }
+
+        #log {
+            margin-top: 20px;
+            text-align: left;
+            background: #f4f4f4;
+            padding: 10px;
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>GamepadPlus V3 (WebHID Reader)</h1>
+    <p>This API works for devices that act like Keyboards/Mice.</p>
+    <button id="connectBtn">Connect via WebHID</button>
+    <div id="status">Status: Disconnected</div>
+    <div id="log">Logs...</div>
+
+    <script>
+        const connectBtn = document.getElementById('connectBtn');
+        const statusDiv = document.getElementById('status');
+        const logDiv = document.getElementById('log');
+
+        connectBtn.addEventListener('click', connectHID);
+
+        async function connectHID() {
+            try {
+                // 1. Connect
+                const devices = await navigator.hid.requestDevice({ filters: [] });
+                if (devices.length === 0) return;
+                const device = devices[0];
+                await device.open();
+
+                statusDiv.innerText = `Connected: ${device.productName}`;
+                console.log("Device opened:", device);
+
+                // 2. Listen for Data (Input Reports)
+                device.addEventListener("inputreport", (event) => {
+                    const { data, reportId } = event;
+                    const values = new Uint8Array(data.buffer);
+
+                    // Print it to the screen!
+                    const entry = document.createElement('div');
+                    entry.innerText = `[ID ${reportId}] Data: ${values.join(", ")}`;
+                    logDiv.prepend(entry);
+                });
+
+                // 3. THE FIX: Send "Wake Up" to the correct IDs
+                // We send a few zeros to ID 3 and ID 4 to tell it "We are listening!"
+
+                const zeroPayload = new Uint8Array([0, 0, 0, 0]);
+
+                try {
+                    logDiv.prepend(document.createElement('div').innerText = "Poking Report ID 3...");
+                    await device.sendReport(3, zeroPayload); // Poke the Media Channel
+                } catch (e) { console.log("ID 3 Poke failed: " + e); }
+
+                try {
+                    logDiv.prepend(document.createElement('div').innerText = "Poking Report ID 4...");
+                    await device.sendReport(4, zeroPayload); // Poke the Gamepad Channel
+                } catch (e) { console.log("ID 4 Poke failed: " + e); }
+
+                statusDiv.innerText += " (Listening...)";
+
+            } catch (error) {
+                console.error(error);
+                statusDiv.innerText = "Error: " + error.message;
+            }
+        }
+    </script>
+</body>
+
+</html>

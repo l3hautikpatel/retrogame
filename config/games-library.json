@@ -2,7 +2,7 @@
     "games": [
         {
             "id": "game_001",
-            "title": "Super Mario Bros (Example)",
+            "title": "Super Mario Bros",
             "system": "NES",
             "core": "nes",
             "romPath": "../assets/roms/super-mario-bros.nes",
@@ -16,7 +16,7 @@
             "title": "Sonic the Hedgehog (Example)",
             "system": "NES",
             "core": "NES",
-            "romPath": "../assets/roms/SNOWBROS.NES",
+            "romPath": "../assets/roms/SNOWBROS.nes",
             "coverImage": "../assets/images/sonic.jpg",
             "description": "Fast-paced platformer - Upload your own ROM",
             "releaseYear": 1991,

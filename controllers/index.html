@@ -71,6 +71,8 @@
                     <button id="btn-b" class="face-btn">B</button>
                     <button id="btn-a" class="face-btn">A</button>
                     <button id="btn-x" class="face-btn">X</button>
+                    <button id="btn-c" class="face-btn" style="display: none;">C</button>
+                    <button id="btn-z" class="face-btn" style="display: none;">Z</button>
                 </div>
             </div>
 
@@ -224,6 +226,13 @@
                         } else {
                             Utils.showToast('You are now inactive', 'info');
                         }
+                    }
+                    break;
+
+                case 'layout_update':
+                    // Update controller layout
+                    if (controllerUI) {
+                        controllerUI.updateLayout(data.layout);
                     }
                     break;
             }

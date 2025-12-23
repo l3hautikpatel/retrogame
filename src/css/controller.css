@@ -299,6 +299,123 @@ body {
     transform: translateY(-50%) scale(0.9);
 }
 
+/* Dynamic Layouts */
+
+/* 2-Button Layout (NES/GB/GBC) */
+.layout-2btn #btn-x,
+.layout-2btn #btn-y,
+.layout-2btn #btn-c,
+.layout-2btn #btn-z {
+    display: none !important;
+}
+
+.layout-2btn #btn-a {
+    right: 30px;
+    bottom: 40px;
+    left: auto;
+    transform: none;
+}
+
+.layout-2btn #btn-b {
+    right: 110px;
+    bottom: 40px;
+    top: auto;
+    transform: none;
+}
+
+/* 4-Button Layout (SNES/PSX/N64/GBA - Default) */
+.layout-4btn #btn-c,
+.layout-4btn #btn-z {
+    display: none !important;
+}
+
+/* 6-Button Layout (Sega) */
+.layout-6btn .face-btn {
+    width: 60px;
+    height: 60px;
+    font-size: var(--font-size-lg);
+}
+
+.layout-6btn #btn-x {
+    left: 0;
+    top: 0;
+    transform: none;
+}
+
+.layout-6btn #btn-y {
+    left: 70px;
+    top: 0;
+    transform: none;
+}
+
+.layout-6btn #btn-z {
+    left: 140px;
+    top: 0;
+    transform: none;
+    display: flex !important;
+}
+
+.layout-6btn #btn-a {
+    left: 0;
+    min-width: 60px;
+    top: 70px;
+    bottom: auto;
+    transform: none;
+}
+
+.layout-6btn #btn-b {
+    left: 70px;
+    right: auto;
+    top: 70px;
+    transform: none;
+}
+
+.layout-6btn #btn-c {
+    left: 140px;
+    top: 70px;
+    transform: none;
+    display: flex !important;
+}
+
+/* Responsive adjustments for 6-button */
+@media (max-width: 480px) {
+    .layout-6btn .face-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 16px;
+    }
+
+    .layout-6btn #btn-x {
+        left: 0;
+        top: 0;
+    }
+
+    .layout-6btn #btn-y {
+        left: 50px;
+        top: 0;
+    }
+
+    .layout-6btn #btn-z {
+        left: 100px;
+        top: 0;
+    }
+
+    .layout-6btn #btn-a {
+        left: 0;
+        top: 50px;
+    }
+
+    .layout-6btn #btn-b {
+        left: 50px;
+        top: 50px;
+    }
+
+    .layout-6btn #btn-c {
+        left: 100px;
+        top: 50px;
+    }
+}
+
 /* Status Bar (Bottom) */
 #status-bar {
     background: var(--bg-light);
