@@ -71,13 +71,7 @@ class GameManager {
             }
 
             Utils.showToast(`Loaded: ${game.title}`, 'success');
-            Utils.showToast(`Loaded: ${game.title}`, 'success');
-
-            // Return game object with layout info
-            return {
-                success: true,
-                layout: this.getLayoutForSystem(game.system || game.core)
-            };
+            return true;
         } catch (error) {
             Utils.error('Failed to load game:', error);
             Utils.showToast('Failed to load game', 'error');
@@ -133,12 +127,7 @@ class GameManager {
             }
 
             Utils.showToast(`Loaded: ${file.name}`, 'success');
-            Utils.showToast(`Loaded: ${file.name}`, 'success');
-
-            return {
-                success: true,
-                layout: this.getLayoutForSystem(this.currentGame.system || core)
-            };
+            return true;
         } catch (error) {
             Utils.error('Failed to load custom ROM:', error);
             Utils.showToast('Failed to load ROM', 'error');
@@ -188,27 +177,6 @@ class GameManager {
         };
 
         return coreMapping[core] || 'nintendo';
-    }
-
-    /**
-     * Get controller layout for system
-     * @param {string} system - System name
-     * @returns {string} Layout type (2btn, 4btn, 6btn)
-     */
-    getLayoutForSystem(system) {
-        // Normalize system string
-        const sys = system.toLowerCase();
-
-        if (['nes', 'gb', 'gbc', 'game boy', 'game boy color'].some(s => sys.includes(s))) {
-            return '2btn';
-        }
-
-        if (['sega', 'genesis', 'mega drive', 'segamd', 'segams', 'segagg'].some(s => sys.includes(s))) {
-            return '6btn';
-        }
-
-        // Default to 4 buttons (SNES, PSX, N64, GBA)
-        return '4btn';
     }
 
     /**

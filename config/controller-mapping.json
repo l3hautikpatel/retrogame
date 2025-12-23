@@ -1,8 +1,8 @@
 {
     "nintendo": {
         "face_buttons": {
-            "a": "z",
-            "b": "x",
+            "a": "x",
+            "b": "z",
             "x": "s",
             "y": "a"
         },
@@ -14,13 +14,13 @@
         },
         "shoulder": {
             "l": "q",
-            "r": "e",
+            "r": "w",
             "l2": "1",
             "r2": "3"
         },
         "system": {
             "start": "Enter",
-            "select": "v"
+            "select": "Shift"
         }
     },
     "sega": {
